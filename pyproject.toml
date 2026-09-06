@@ -6,4 +6,12 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.141.1",
+    "influxdb3-python>=0.17.0",
+    "paho-mqtt>=2.1.0",
+    "pydantic-settings>=2.10.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.2",
 ]

@@ -5,4 +5,4 @@ sync:
 	uv sync
 
 dev:
-	uv run python app/main.py
+	uv run fastapi dev app/main.py
