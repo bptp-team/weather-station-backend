@@ -1,9 +1,9 @@
 from datetime import timedelta
 
 from app.models.weather import MeasurementEvent
+from app.services.snapshot import SnapshotAggregator
 from app.repositories.influx import SnapshotRepository
 from app.services.broadcaster import SnapshotBroadcaster
-from app.services.snapshot import SnapshotAggregator
 
 
 class WeatherIngestionService:
