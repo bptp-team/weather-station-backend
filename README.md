@@ -83,10 +83,14 @@ WEATHER_MQTT_PORT=1883
 WEATHER_INFLUX_URL=http://127.0.0.1:8181
 WEATHER_INFLUX_DATABASE=weather-station-db
 WEATHER_INFLUX_MEASUREMENT=weather_reading
+WEATHER_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-Override settings with environment variables prefixed by `WEATHER_`. The
-The local InfluxDB 3 development connection does not use authentication.
+Override settings with environment variables prefixed by `WEATHER_`. Set
+`WEATHER_ALLOWED_ORIGINS` to the browser client origins allowed to access the
+API. Separate multiple origins with commas and no spaces, for example
+`http://localhost:5173,http://192.168.1.10:5173`. The local InfluxDB 3
+development connection does not use authentication.
 
 Run the backend with:
 

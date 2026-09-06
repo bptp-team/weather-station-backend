@@ -10,6 +10,7 @@ from collections.abc import Callable
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import router as api_v1_router
 from app.core.settings import Settings
@@ -93,6 +94,12 @@ def create_app(
 
     app = FastAPI(title="Weather Station Back-end", lifespan=lifespan)
     app.state.snapshot_broadcaster = SnapshotBroadcaster()
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=app_settings.cors_origins,
+        allow_methods=["GET"],
+        allow_headers=[],
+    )
     app.include_router(api_v1_router, prefix="/api/v1")
 
     return app
