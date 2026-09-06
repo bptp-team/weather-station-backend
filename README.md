@@ -11,6 +11,11 @@
         width="50"
         height="50"
     />
+    <img
+        src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/influxdb/influxdb-original.svg"
+        width="50"
+        height="50"
+    />
     <img src="/docs/pydantic.svg" width="50" height="50" />
     <img src="/docs/uv.svg" width="50" height="50" />
     <img src="/docs/mosquitto.svg" width="50" height="50" />
