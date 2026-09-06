@@ -21,7 +21,7 @@ class WeatherSnapshot:
     air_pressure: float
     air_humidity: float
     air_quality: int
-    daylight: str
+    daylight: int
     water_level: int
     received_at: datetime
 

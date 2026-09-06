@@ -49,7 +49,7 @@ class SnapshotAggregator:
                 air_pressure=float(pending.values["airPressure"]),
                 air_humidity=float(pending.values["airHumidity"]),
                 air_quality=int(pending.values["airQuality"]),
-                daylight=str(pending.values["daylight"]),
+                daylight=int(pending.values["daylight"]),
                 water_level=int(pending.values["waterLevel"]),
                 received_at=received_at,
             )

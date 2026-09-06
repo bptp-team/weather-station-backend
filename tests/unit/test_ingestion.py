@@ -20,12 +20,23 @@ def test_parse_valid_temperature_message() -> None:
     assert event.value == 23.45
 
 
+def test_parse_valid_daylight_message() -> None:
+    event = parse_message("weather/station-01/daylight", b"2748")
+
+    assert event.measurement == "daylight"
+    assert event.value == 2748
+    assert isinstance(event.value, int)
+
+
 def test_parse_rejects_unknown_measurement_and_invalid_payload() -> None:
     with pytest.raises(ValueError):
         parse_message("weather/station-01/unknown", b"1")
 
     with pytest.raises(ValueError):
         parse_message("weather/station-01/airTemperature", b"not-a-number")
+
+    with pytest.raises(ValueError):
+        parse_message("weather/station-01/daylight", b"DAY")
 
 
 def test_six_measurements_emit_one_complete_snapshot() -> None:
@@ -35,7 +46,7 @@ def test_six_measurements_emit_one_complete_snapshot() -> None:
         ("airTemperature", 23.45),
         ("airPressure", 101325.0),
         ("airHumidity", 45.0),
-        ("daylight", "DAY"),
+        ("daylight", 2748),
         ("waterLevel", 12),
         ("airQuality", 4),
     )
@@ -69,7 +80,7 @@ def test_snapshot_maps_to_influx_point() -> None:
         ("airTemperature", 23.45),
         ("airPressure", 101325.0),
         ("airHumidity", 45.0),
-        ("daylight", "DAY"),
+        ("daylight", 2748),
         ("waterLevel", 12),
         ("airQuality", 4),
     ):
@@ -80,7 +91,17 @@ def test_snapshot_maps_to_influx_point() -> None:
     assert point.measurement == "weather_reading"
     assert point.tags == {"device_id": "station-01"}
     assert point.fields["airTemperature"] == 23.45
-    assert point.fields["daylight"] == "DAY"
+    assert point.fields["airPressure"] == 101325.0
+    assert point.fields["airHumidity"] == 45.0
+    assert point.fields["daylight"] == 2748
+    assert point.fields["waterLevel"] == 12
+    assert point.fields["airQuality"] == 4
+    assert isinstance(point.fields["airTemperature"], float)
+    assert isinstance(point.fields["airPressure"], float)
+    assert isinstance(point.fields["airHumidity"], float)
+    assert isinstance(point.fields["daylight"], int)
+    assert isinstance(point.fields["waterLevel"], int)
+    assert isinstance(point.fields["airQuality"], int)
     assert point.time == timestamp
 
 
