@@ -29,7 +29,7 @@ def make_snapshot(
 
 def test_subscriber_receives_future_snapshot_as_sse_data() -> None:
     broadcaster = SnapshotBroadcaster()
-    subscription = broadcaster.subscribe()
+    subscription = broadcaster.subscribe("station-01")
     stream = _stream_snapshots(subscription)
     snapshot = make_snapshot()
 
@@ -55,7 +55,7 @@ def test_subscriber_receives_future_snapshot_as_sse_data() -> None:
 
 def test_snapshot_air_pressure_is_streamed_in_atm() -> None:
     broadcaster = SnapshotBroadcaster()
-    subscription = broadcaster.subscribe()
+    subscription = broadcaster.subscribe("station-01")
     stream = _stream_snapshots(subscription)
 
     broadcaster.publish(make_snapshot(air_pressure=95000.0))
@@ -70,13 +70,28 @@ def test_snapshot_air_pressure_is_streamed_in_atm() -> None:
 
 def test_closed_broadcaster_ends_stream() -> None:
     broadcaster = SnapshotBroadcaster()
-    subscription = broadcaster.subscribe()
+    subscription = broadcaster.subscribe("station-01")
     stream = _stream_snapshots(subscription)
 
     broadcaster.close()
 
     with pytest.raises(StopAsyncIteration):
         asyncio.run(stream.__anext__())
+
+
+def test_subscriber_only_receives_snapshots_for_its_station() -> None:
+    broadcaster = SnapshotBroadcaster()
+    subscription = broadcaster.subscribe("station-01")
+    stream = _stream_snapshots(subscription)
+
+    broadcaster.publish(make_snapshot("station-02"))
+    broadcaster.publish(make_snapshot("station-01"))
+
+    event = asyncio.run(stream.__anext__())
+
+    assert json.loads(event.removeprefix("data: ").strip())["device_id"] == "station-01"
+
+    asyncio.run(stream.aclose())
 
 
 def test_stream_route_uses_event_stream_media_type() -> None:
@@ -86,7 +101,7 @@ def test_stream_route_uses_event_stream_media_type() -> None:
         {
             "type": "http",
             "method": "GET",
-            "path": "/api/v1/readings/stream",
+            "path": "/api/v1/readings/station-01/stream",
             "headers": [],
             "query_string": b"",
             "scheme": "http",
@@ -96,7 +111,7 @@ def test_stream_route_uses_event_stream_media_type() -> None:
         }
     )
 
-    response = asyncio.run(stream_readings(request))
+    response = asyncio.run(stream_readings("station-01", request))
 
     assert response.media_type == "text/event-stream"
     asyncio.run(response.body_iterator.aclose())

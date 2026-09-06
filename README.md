@@ -44,7 +44,7 @@ does not publish one.
 Complete snapshots are also pushed to connected clients as server-sent events:
 
 ```text
-GET /api/v1/readings/stream
+GET /api/v1/readings/{station_id}/stream
 ```
 
 Each `data:` frame carries one snapshot as JSON, and a `: keep-alive` comment

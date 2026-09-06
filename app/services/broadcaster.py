@@ -11,8 +11,14 @@ class SubscriptionClosed(Exception):
 
 
 class SnapshotSubscription:
-    def __init__(self, broadcaster: SnapshotBroadcaster, queue: Queue[WeatherSnapshot | None]) -> None:
+    def __init__(
+        self,
+        broadcaster: SnapshotBroadcaster,
+        station_id: str,
+        queue: Queue[WeatherSnapshot | None],
+    ) -> None:
         self._broadcaster = broadcaster
+        self.station_id = station_id
         self._queue = queue
 
     def get(self, timeout: float) -> WeatherSnapshot | None:
@@ -35,8 +41,12 @@ class SnapshotBroadcaster:
         self._subscriptions: dict[SnapshotSubscription, Queue[WeatherSnapshot | None]] = {}
         self._lock = Lock()
 
-    def subscribe(self) -> SnapshotSubscription:
-        subscription = SnapshotSubscription(self, Queue(maxsize=self._queue_size))
+    def subscribe(self, station_id: str) -> SnapshotSubscription:
+        subscription = SnapshotSubscription(
+            self,
+            station_id,
+            Queue(maxsize=self._queue_size),
+        )
         with self._lock:
             self._subscriptions[subscription] = subscription._queue
         return subscription
@@ -50,10 +60,11 @@ class SnapshotBroadcaster:
 
     def publish(self, snapshot: WeatherSnapshot) -> None:
         with self._lock:
-            queues = tuple(self._subscriptions.values())
+            subscriptions = tuple(self._subscriptions.items())
 
-        for queue in queues:
-            self._put_latest(queue, snapshot)
+        for subscription, queue in subscriptions:
+            if subscription.station_id == snapshot.device_id:
+                self._put_latest(queue, snapshot)
 
     def close(self) -> None:
         with self._lock:

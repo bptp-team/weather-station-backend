@@ -53,7 +53,7 @@ def _serialize_value(value: object) -> str:
 
 
 @router.get(
-    "/stream",
+    "/{station_id}/stream",
     summary="Stream weather snapshots as server-sent events",
     response_class=StreamingResponse,
     responses={
@@ -84,8 +84,8 @@ def _serialize_value(value: object) -> str:
         }
     },
 )
-async def stream_readings(request: Request) -> StreamingResponse:
-    """Stream every weather snapshot to the caller as it is aggregated.
+async def stream_readings(station_id: str, request: Request) -> StreamingResponse:
+    """Stream snapshots for one station to the caller as they are aggregated.
 
     Every value is forwarded exactly as the firmware published it, with one
     exception: `air_pressure`, which is converted from pascal to atmospheres.
@@ -106,7 +106,7 @@ async def stream_readings(request: Request) -> StreamingResponse:
       because the firmware does not publish a timestamp.
     """
     broadcaster = request.app.state.snapshot_broadcaster
-    subscription = broadcaster.subscribe()
+    subscription = broadcaster.subscribe(station_id)
     return StreamingResponse(
         _stream_snapshots(subscription),
         media_type="text/event-stream",
