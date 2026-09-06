@@ -64,8 +64,8 @@ exception: `air_pressure`, which is converted from pascal to atmospheres.
 | `air_pressure` | **atm** | Converted from the pascal published over MQTT |
 | `air_humidity` | % | Relative humidity |
 | `air_quality` | raw integer | Neither scaled nor classified by the backend |
-| `daylight` | voltage | Produced by the LDR module |
-| `water_level` | raw integer | |
+| `daylight` | raw integer | Voltage produced by the LDR module |
+| `water_level` | raw integer | Voltage produced by the water level sensor |
 | `received_at` | ISO 8601 UTC | Backend clock; the firmware sends no timestamp |
 
 The pressure conversion (1 atm = 101325 Pa) happens only at the API boundary —

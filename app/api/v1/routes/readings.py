@@ -100,7 +100,7 @@ async def stream_readings(request: Request) -> StreamingResponse:
     - `air_quality`: air quality reading as a raw integer. The backend neither
       scales nor classifies it.
     - `daylight`: the voltage produced by the LDR module.
-    - `water_level`: water level reading as a raw integer.
+    - `water_level`: the voltage produced by the water level sensor.
     - `received_at`: ISO 8601 UTC timestamp of when the backend received the
       measurement that completed the snapshot. The backend clock is used
       because the firmware does not publish a timestamp.
