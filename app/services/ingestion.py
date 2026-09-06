@@ -2,12 +2,20 @@ from datetime import timedelta
 
 from app.models.weather import MeasurementEvent
 from app.repositories.influx import SnapshotRepository
+from app.services.broadcaster import SnapshotBroadcaster
 from app.services.snapshot import SnapshotAggregator
 
 
 class WeatherIngestionService:
-    def __init__(self, repository: SnapshotRepository, *, window_seconds: int) -> None:
+    def __init__(
+        self,
+        repository: SnapshotRepository,
+        *,
+        window_seconds: int,
+        broadcaster: SnapshotBroadcaster | None = None,
+    ) -> None:
         self._repository = repository
+        self._broadcaster = broadcaster
         self._aggregator = SnapshotAggregator(window=timedelta(seconds=window_seconds))
 
     def accept(self, event: MeasurementEvent) -> None:
@@ -20,6 +28,8 @@ class WeatherIngestionService:
         
         if snapshot is not None:
             self._repository.save(snapshot)
+            if self._broadcaster is not None:
+                self._broadcaster.publish(snapshot)
 
     def expire(self, now) -> list[str]:
         return self._aggregator.expire(now)

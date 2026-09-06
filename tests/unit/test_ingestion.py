@@ -3,7 +3,9 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.mqtt.parser import parse_message
+from app.models.weather import MeasurementEvent
 from app.repositories.influx import snapshot_to_point
+from app.services.ingestion import WeatherIngestionService
 from app.services.snapshot import SnapshotAggregator
 from app.main import create_app
 
@@ -70,6 +72,66 @@ def test_incomplete_snapshot_expires_without_emitting() -> None:
 
     assert aggregator.accept("station-01", "airTemperature", 23.45, timestamp) is None
     assert aggregator.expire(timestamp + timedelta(seconds=31)) == ["station-01"]
+
+
+def test_ingestion_saves_complete_snapshot_before_publishing() -> None:
+    lifecycle = []
+
+    class FakeRepository:
+        def save(self, snapshot) -> None:
+            lifecycle.append(("save", snapshot))
+
+    class FakeBroadcaster:
+        def publish(self, snapshot) -> None:
+            lifecycle.append(("publish", snapshot))
+
+    service = WeatherIngestionService(
+        FakeRepository(),
+        window_seconds=30,
+        broadcaster=FakeBroadcaster(),
+    )
+    timestamp = datetime(2026, 9, 6, tzinfo=timezone.utc)
+
+    for measurement, value in (
+        ("airTemperature", 23.45),
+        ("airPressure", 101325.0),
+        ("airHumidity", 45.0),
+        ("daylight", 2748),
+        ("waterLevel", 12),
+        ("airQuality", 4),
+    ):
+        service.accept(MeasurementEvent("station-01", measurement, value, timestamp))
+
+    assert [action for action, _ in lifecycle] == ["save", "publish"]
+    assert lifecycle[0][1] == lifecycle[1][1]
+
+
+def test_ingestion_does_not_publish_when_saving_fails() -> None:
+    class FailingRepository:
+        def save(self, snapshot) -> None:
+            raise RuntimeError("database unavailable")
+
+    class UnexpectedPublisher:
+        def publish(self, snapshot) -> None:
+            pytest.fail("snapshot was published before it was saved")
+
+    service = WeatherIngestionService(
+        FailingRepository(),
+        window_seconds=30,
+        broadcaster=UnexpectedPublisher(),
+    )
+    timestamp = datetime(2026, 9, 6, tzinfo=timezone.utc)
+
+    with pytest.raises(RuntimeError, match="database unavailable"):
+        for measurement, value in (
+            ("airTemperature", 23.45),
+            ("airPressure", 101325.0),
+            ("airHumidity", 45.0),
+            ("daylight", 2748),
+            ("waterLevel", 12),
+            ("airQuality", 4),
+        ):
+            service.accept(MeasurementEvent("station-01", measurement, value, timestamp))
 
 
 def test_snapshot_maps_to_influx_point() -> None:

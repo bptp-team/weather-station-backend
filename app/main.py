@@ -11,11 +11,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.v1 import router as api_v1_router
 from app.core.settings import Settings
 from app.db.influx import create_influx_client, ensure_database_exists
 from app.mqtt.client import MqttSubscriber
 from app.repositories.influx import InfluxRepository
 from app.services.ingestion import WeatherIngestionService
+from app.services.broadcaster import SnapshotBroadcaster
 
 
 def _configure_logging() -> None:
@@ -68,9 +70,12 @@ def create_app(
         await asyncio.to_thread(initialize_database, app_settings)
 
         repository = make_repository(app_settings)
+        broadcaster = SnapshotBroadcaster()
+        app.state.snapshot_broadcaster = broadcaster
         service = WeatherIngestionService(
             repository,
             window_seconds=app_settings.snapshot_window_seconds,
+            broadcaster=broadcaster,
         )
         subscriber = make_subscriber(app_settings, service)
 
@@ -80,14 +85,15 @@ def create_app(
             yield
         finally:
             await asyncio.to_thread(subscriber.stop)
+            broadcaster.close()
             close = getattr(repository, "close", None)
 
             if close is not None:
                 await asyncio.to_thread(close)
 
     app = FastAPI(title="Weather Station Back-end", lifespan=lifespan)
-
-    # app.include_router(api_v1_router, prefix="/api/v1")
+    app.state.snapshot_broadcaster = SnapshotBroadcaster()
+    app.include_router(api_v1_router, prefix="/api/v1")
 
     return app
 
