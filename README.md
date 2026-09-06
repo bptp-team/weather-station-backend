@@ -54,11 +54,23 @@ frame is sent every 15 seconds of silence so proxies keep the connection open:
 data: {"device_id": "station-01", "air_temperature": 23.45, "air_pressure": 1.0, "air_humidity": 45.0, "air_quality": 4, "daylight": 2748, "water_level": 12, "received_at": "2026-09-06T00:00:00+00:00"}
 ```
 
-Units match the firmware payloads, with one exception: **`air_pressure` is
-streamed in standard atmospheres (atm)**, not in the pascal values published
-over MQTT (1 atm = 101325 Pa). The conversion happens only at the API
-boundary — the ingestion pipeline and InfluxDB keep storing pascal, so the
-stored history stays in a single unit.
+Every value is forwarded exactly as the firmware published it, with one
+exception: `air_pressure`, which is converted from pascal to atmospheres.
+
+| Field | Unit | Notes |
+| ----- | ---- | ----- |
+| `device_id` | — | Station identifier, taken from the MQTT topic |
+| `air_temperature` | °C | |
+| `air_pressure` | **atm** | Converted from the pascal published over MQTT |
+| `air_humidity` | % | Relative humidity |
+| `air_quality` | raw integer | Neither scaled nor classified by the backend |
+| `daylight` | voltage | Produced by the LDR module |
+| `water_level` | raw integer | |
+| `received_at` | ISO 8601 UTC | Backend clock; the firmware sends no timestamp |
+
+The pressure conversion (1 atm = 101325 Pa) happens only at the API boundary —
+the ingestion pipeline and InfluxDB keep storing pascal, so the stored history
+stays in a single unit.
 
 The interactive Swagger documentation is served at `/docs` once the backend is
 running.

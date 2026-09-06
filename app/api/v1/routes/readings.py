@@ -87,12 +87,23 @@ def _serialize_value(value: object) -> str:
 async def stream_readings(request: Request) -> StreamingResponse:
     """Stream every weather snapshot to the caller as it is aggregated.
 
-    Units follow the firmware payloads, with one exception: `air_pressure` is
-    streamed in **standard atmospheres (atm)**, converted from the pascal
-    values published over MQTT and stored in InfluxDB (1 atm = 101325 Pa).
-    The remaining fields are streamed as received: `air_temperature` in degrees
-    Celsius, `air_humidity` as a percentage, and `air_quality`, `daylight` and
-    `water_level` as raw integer sensor readings.
+    Every value is forwarded exactly as the firmware published it, with one
+    exception: `air_pressure`, which is converted from pascal to atmospheres.
+
+    - `device_id`: identifier of the station that produced the snapshot, taken
+      from the MQTT topic `weather/<device-id>/<measurement>`.
+    - `air_temperature`: air temperature in degrees Celsius.
+    - `air_pressure`: atmospheric pressure in **standard atmospheres (atm)**.
+      The firmware publishes pascal and InfluxDB stores pascal; the conversion
+      (1 atm = 101325 Pa) happens only here, at the API boundary.
+    - `air_humidity`: relative air humidity as a percentage.
+    - `air_quality`: air quality reading as a raw integer. The backend neither
+      scales nor classifies it.
+    - `daylight`: the voltage produced by the LDR module.
+    - `water_level`: water level reading as a raw integer.
+    - `received_at`: ISO 8601 UTC timestamp of when the backend received the
+      measurement that completed the snapshot. The backend clock is used
+      because the firmware does not publish a timestamp.
     """
     broadcaster = request.app.state.snapshot_broadcaster
     subscription = broadcaster.subscribe()
