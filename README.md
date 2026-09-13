@@ -75,6 +75,23 @@ The **pressure conversion** (`1 atm = 101325 Pa`) happens **only at the API
 boundary** — the **ingestion pipeline** and **InfluxDB** keep storing **pascal**,
 so the **stored history stays in a single unit**.
 
+## Historical readings
+
+Complete snapshots can be retrieved over HTTP as a JSON list:
+
+```text
+GET /api/v1/readings/{station_id}?from=2026-09-01T00:00:00Z&to=2026-09-07T00:00:00Z
+```
+
+The `from` and `to` parameters are optional when requesting the current UTC day.
+If one is provided, both must be provided. The interval is half-open (`[from, to)`)
+and cannot exceed 15 days; exactly 15 days is accepted. An empty result returns
+`200 []`.
+
+The JSON object for each historical reading has exactly the same fields and units
+as each streaming `data:` event. In particular, `air_pressure` is returned in
+**atmospheres** and `received_at` is an ISO 8601 string.
+
 The interactive **Swagger documentation** is served at `/docs` once the backend
 is running.
 

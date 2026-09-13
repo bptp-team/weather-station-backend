@@ -1,14 +1,13 @@
 import asyncio
 import json
 from collections.abc import AsyncIterator
-from dataclasses import asdict
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
+from app.api.formatters.weather import snapshot_to_api_payload
 from app.models.weather import WeatherSnapshot
 from app.services.broadcaster import SnapshotSubscription, SubscriptionClosed
-from app.utils.units import pascal_to_atm
 
 
 SUBSCRIPTION_POLL_INTERVAL_SECONDS = 15.0
@@ -40,10 +39,7 @@ async def _stream_snapshots(subscription: SnapshotSubscription) -> AsyncIterator
 
 
 def _snapshot_to_event_payload(snapshot: WeatherSnapshot) -> dict[str, object]:
-    """Expose the snapshot over SSE with air pressure in atmospheres."""
-    payload = asdict(snapshot)
-    payload["air_pressure"] = pascal_to_atm(snapshot.air_pressure)
-    return payload
+    return snapshot_to_api_payload(snapshot)
 
 
 def _serialize_value(value: object) -> str:
