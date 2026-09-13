@@ -1,5 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
+import pyarrow as pa
 import pytest
 
 from app.repositories.historical_influx import HistoricalInfluxRepository
@@ -93,3 +94,35 @@ def test_read_returns_empty_result_without_rows(
         START,
         datetime(2026, 9, 2, tzinfo=timezone.utc),
     ) == []
+
+
+def test_read_converts_arrow_nanosecond_timestamps_to_python_datetime() -> None:
+    client = FakeInfluxClient(
+        pa.table(
+            {
+                "time": pa.array(
+                    [1789329373262545247],
+                    type=pa.timestamp("ns"),
+                ),
+                "device_id": ["station-01"],
+                "air_temperature": [23.45],
+                "air_pressure": [101325.0],
+                "air_humidity": [45.0],
+                "air_quality": [4],
+                "daylight": [2748],
+                "water_level": [12],
+            }
+        )
+    )
+    repository = HistoricalInfluxRepository(
+        client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+    )
+
+    snapshots = repository.read("station-01", START, END)
+
+    expected_received_at = datetime(1970, 1, 1) + timedelta(
+        microseconds=1789329373262545247 // 1_000
+    )
+    assert snapshots[0].received_at == expected_received_at

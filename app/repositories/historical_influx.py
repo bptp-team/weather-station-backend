@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Protocol
 
+import pyarrow as pa
 from influxdb_client_3 import InfluxDBClient3
 
 from app.models.weather import WeatherSnapshot
@@ -62,11 +63,29 @@ ORDER BY time
 
     @staticmethod
     def _result_rows(result: Any) -> list[dict[str, Any]]:
+        if isinstance(result, pa.Table):
+            return HistoricalInfluxRepository._normalize_arrow_timestamps(result).to_pylist()
         if hasattr(result, "to_pylist"):
             return result.to_pylist()
         if hasattr(result, "to_dict"):
             return result.to_dict(orient="records")
         return list(result)
+
+    @staticmethod
+    def _normalize_arrow_timestamps(result: pa.Table) -> pa.Table:
+        original_schema = result.schema
+        normalized_schema = pa.schema(
+            [
+            field.with_type(pa.timestamp("us", tz=field.type.tz))
+            if pa.types.is_timestamp(field.type) and field.type.unit != "us"
+            else field
+                for field in original_schema
+            ],
+            metadata=original_schema.metadata,
+        )
+        if normalized_schema == original_schema:
+            return result
+        return result.cast(normalized_schema, safe=False)
 
     @staticmethod
     def _row_to_snapshot(row: dict[str, Any]) -> WeatherSnapshot:

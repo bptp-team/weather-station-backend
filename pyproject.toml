@@ -8,6 +8,7 @@ dependencies = [
     "fastapi[standard]>=0.141.1",
     "influxdb3-python>=0.17.0",
     "paho-mqtt>=2.1.0",
+    "pyarrow>=25.0.1",
     "pydantic-settings>=2.10.1",
 ]
 
