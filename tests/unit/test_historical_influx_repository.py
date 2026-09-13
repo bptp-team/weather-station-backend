@@ -50,12 +50,12 @@ def test_read_queries_station_range_and_maps_all_measurements(
             {
                 "time": datetime(2026, 9, 6, 10, tzinfo=timezone.utc),
                 "device_id": "station-01",
-                "airTemperature": 23.45,
-                "airPressure": 101325.0,
-                "airHumidity": 45.0,
-                "airQuality": 4,
+                "air_temperature": 23.45,
+                "air_pressure": 101325.0,
+                "air_humidity": 45.0,
+                "air_quality": 4,
                 "daylight": 2748,
-                "waterLevel": 12,
+                "water_level": 12,
             }
         ]
     )

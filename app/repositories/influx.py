@@ -22,12 +22,12 @@ def snapshot_to_point(
         measurement=measurement_name,
         tags={"device_id": snapshot.device_id},
         fields={
-            "airTemperature": snapshot.air_temperature,
-            "airPressure": snapshot.air_pressure,
-            "airHumidity": snapshot.air_humidity,
+            "air_temperature": snapshot.air_temperature,
+            "air_pressure": snapshot.air_pressure,
+            "air_humidity": snapshot.air_humidity,
             "daylight": snapshot.daylight,
-            "waterLevel": snapshot.water_level,
-            "airQuality": snapshot.air_quality,
+            "water_level": snapshot.water_level,
+            "air_quality": snapshot.air_quality,
         },
         time=snapshot.received_at,
     )

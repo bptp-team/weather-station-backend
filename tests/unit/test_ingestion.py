@@ -152,18 +152,18 @@ def test_snapshot_maps_to_influx_point() -> None:
 
     assert point.measurement == "weather_reading"
     assert point.tags == {"device_id": "station-01"}
-    assert point.fields["airTemperature"] == 23.45
-    assert point.fields["airPressure"] == 101325.0
-    assert point.fields["airHumidity"] == 45.0
+    assert point.fields["air_temperature"] == 23.45
+    assert point.fields["air_pressure"] == 101325.0
+    assert point.fields["air_humidity"] == 45.0
     assert point.fields["daylight"] == 2748
-    assert point.fields["waterLevel"] == 12
-    assert point.fields["airQuality"] == 4
-    assert isinstance(point.fields["airTemperature"], float)
-    assert isinstance(point.fields["airPressure"], float)
-    assert isinstance(point.fields["airHumidity"], float)
+    assert point.fields["water_level"] == 12
+    assert point.fields["air_quality"] == 4
+    assert isinstance(point.fields["air_temperature"], float)
+    assert isinstance(point.fields["air_pressure"], float)
+    assert isinstance(point.fields["air_humidity"], float)
     assert isinstance(point.fields["daylight"], int)
-    assert isinstance(point.fields["waterLevel"], int)
-    assert isinstance(point.fields["airQuality"], int)
+    assert isinstance(point.fields["water_level"], int)
+    assert isinstance(point.fields["air_quality"], int)
     assert point.time == timestamp
 
 

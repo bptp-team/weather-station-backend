@@ -69,6 +69,19 @@ def test_date_values_are_not_interpolated_into_sql(
     assert "2026-09-02" not in client.query_text
 
 
+def test_snake_case_field_names_are_used_in_sql(
+    client: RecordingInfluxClient,
+    repository: HistoricalInfluxRepository,
+) -> None:
+    read_with(repository, "station-01")
+
+    for field in ("air_temperature", "air_pressure", "air_humidity", "air_quality", "water_level"):
+        assert field in client.query_text
+
+    for field in ("airTemperature", "airPressure", "airHumidity", "airQuality", "waterLevel"):
+        assert field not in client.query_text
+
+
 def test_measurement_name_quotes_are_escaped_as_one_identifier(
     client: RecordingInfluxClient,
 ) -> None:

@@ -28,12 +28,12 @@ class HistoricalInfluxRepository:
 SELECT
     time,
     device_id,
-    airTemperature,
-    airPressure,
-    airHumidity,
-    airQuality,
+    air_temperature,
+    air_pressure,
+    air_humidity,
+    air_quality,
     daylight,
-    waterLevel
+    water_level
 FROM {self._quote_identifier(self._measurement_name)}
 WHERE device_id = $station_id
   AND time >= $start
@@ -75,11 +75,11 @@ ORDER BY time
             received_at = datetime.fromisoformat(received_at)
         return WeatherSnapshot(
             device_id=str(row["device_id"]),
-            air_temperature=float(row["airTemperature"]),
-            air_pressure=float(row["airPressure"]),
-            air_humidity=float(row["airHumidity"]),
-            air_quality=int(row["airQuality"]),
+            air_temperature=float(row["air_temperature"]),
+            air_pressure=float(row["air_pressure"]),
+            air_humidity=float(row["air_humidity"]),
+            air_quality=int(row["air_quality"]),
             daylight=int(row["daylight"]),
-            water_level=int(row["waterLevel"]),
+            water_level=int(row["water_level"]),
             received_at=received_at,
         )
