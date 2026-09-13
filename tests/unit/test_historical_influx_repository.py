@@ -1,6 +1,12 @@
 from datetime import datetime, timezone
 
+import pytest
+
 from app.repositories.historical_influx import HistoricalInfluxRepository
+
+
+START = datetime(2026, 9, 1, tzinfo=timezone.utc)
+END = datetime(2026, 9, 7, tzinfo=timezone.utc)
 
 
 class FakeQueryResult:
@@ -21,32 +27,39 @@ class FakeInfluxClient:
         return self.result
 
 
-def test_read_queries_station_range_and_maps_all_measurements() -> None:
-    client = FakeInfluxClient(
-        FakeQueryResult(
-            [
-                {
-                    "time": datetime(2026, 9, 6, 10, tzinfo=timezone.utc),
-                    "device_id": "station-01",
-                    "airTemperature": 23.45,
-                    "airPressure": 101325.0,
-                    "airHumidity": 45.0,
-                    "airQuality": 4,
-                    "daylight": 2748,
-                    "waterLevel": 12,
-                }
-            ]
-        )
-    )
-    repository = HistoricalInfluxRepository(
+@pytest.fixture
+def client() -> FakeInfluxClient:
+    return FakeInfluxClient(FakeQueryResult([]))
+
+
+@pytest.fixture
+def repository(client: FakeInfluxClient) -> HistoricalInfluxRepository:
+    return HistoricalInfluxRepository(
         client,
         database="weather-station-db",
         measurement_name="weather_reading",
     )
-    start = datetime(2026, 9, 1, tzinfo=timezone.utc)
-    end = datetime(2026, 9, 7, tzinfo=timezone.utc)
 
-    snapshots = repository.read("station-01", start, end)
+
+def test_read_queries_station_range_and_maps_all_measurements(
+    client: FakeInfluxClient,
+    repository: HistoricalInfluxRepository,
+) -> None:
+    client.result = FakeQueryResult(
+        [
+            {
+                "time": datetime(2026, 9, 6, 10, tzinfo=timezone.utc),
+                "device_id": "station-01",
+                "airTemperature": 23.45,
+                "airPressure": 101325.0,
+                "airHumidity": 45.0,
+                "airQuality": 4,
+                "daylight": 2748,
+                "waterLevel": 12,
+            }
+        ]
+    )
+    snapshots = repository.read("station-01", START, END)
 
     assert snapshots[0].device_id == "station-01"
     assert snapshots[0].air_temperature == 23.45
@@ -63,8 +76,8 @@ def test_read_queries_station_range_and_maps_all_measurements() -> None:
     assert call["mode"] == "all"
     assert call["query_parameters"] == {
         "station_id": "station-01",
-        "start": start.isoformat(),
-        "end": end.isoformat(),
+        "start": START.isoformat(),
+        "end": END.isoformat(),
     }
     assert 'FROM "weather_reading"' in call["query"]
     assert "device_id = $station_id" in call["query"]
@@ -72,16 +85,11 @@ def test_read_queries_station_range_and_maps_all_measurements() -> None:
     assert "time < $end" in call["query"]
 
 
-def test_read_returns_empty_result_without_rows() -> None:
-    client = FakeInfluxClient(FakeQueryResult([]))
-    repository = HistoricalInfluxRepository(
-        client,
-        database="weather-station-db",
-        measurement_name="weather_reading",
-    )
-
+def test_read_returns_empty_result_without_rows(
+    repository: HistoricalInfluxRepository,
+) -> None:
     assert repository.read(
         "station-01",
-        datetime(2026, 9, 1, tzinfo=timezone.utc),
+        START,
         datetime(2026, 9, 2, tzinfo=timezone.utc),
     ) == []

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 
+import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -86,3 +87,23 @@ def test_history_rejects_only_one_date_parameter() -> None:
 
     assert response.status_code == 422
     assert "from and to must be provided together" in response.json()["detail"]
+
+
+@pytest.mark.parametrize("parameter_name", ["from", "to"])
+def test_history_rejects_injection_payload_in_date_parameter(parameter_name: str) -> None:
+    service = FakeHistoricalService([])
+    malicious_date = "2026-09-01T00:00:00Z' OR 1=1; DROP TABLE weather_reading; --"
+    request_dates = {
+        "from": "2026-09-01T00:00:00Z",
+        "to": "2026-09-02T00:00:00Z",
+    }
+    request_dates[parameter_name] = malicious_date
+
+    with make_test_client(service) as client:
+        response = client.get(
+            "/api/v1/readings/station-01",
+            params=request_dates,
+        )
+
+    assert response.status_code == 422
+    assert service.request is None
