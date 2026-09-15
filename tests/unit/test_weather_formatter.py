@@ -7,9 +7,9 @@ from app.models.weather import WeatherSnapshot
 def test_snapshot_to_api_payload_matches_public_snapshot_contract() -> None:
     snapshot = WeatherSnapshot(
         device_id="station-01",
-        air_temperature=23.45,
-        air_pressure=101325.0,
-        air_humidity=45.0,
+        air_temperature=23.456,
+        air_pressure=95000.0,
+        air_humidity=45.678,
         air_quality=4,
         daylight=2748,
         water_level=12,
@@ -18,9 +18,9 @@ def test_snapshot_to_api_payload_matches_public_snapshot_contract() -> None:
 
     assert snapshot_to_api_payload(snapshot) == {
         "device_id": "station-01",
-        "air_temperature": 23.45,
-        "air_pressure": 1.0,
-        "air_humidity": 45.0,
+        "air_temperature": 23.46,
+        "air_pressure": 0.94,
+        "air_humidity": 45.68,
         "air_quality": 4,
         "daylight": 2748,
         "water_level": 12,

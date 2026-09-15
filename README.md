@@ -56,9 +56,9 @@ connection open**:
 data: {"device_id": "station-01", "air_temperature": 23.45, "air_pressure": 1.0, "air_humidity": 45.0, "air_quality": 4, "daylight": 2748, "water_level": 12, "received_at": "2026-09-06T00:00:00+00:00"}
 ```
 
-Every value is forwarded **exactly as the firmware published it**, with **one
-exception**: `air_pressure`, which is converted from **pascal** to
-**atmospheres**.
+The three floating-point measurements are returned rounded to **two decimal
+places**. Integer measurements are forwarded as integers. `air_pressure` is
+also converted from **pascal** to **atmospheres** before rounding.
 
 | Field | Unit | Notes |
 | ----- | ---- | ----- |
@@ -71,9 +71,10 @@ exception**: `air_pressure`, which is converted from **pascal** to
 | `water_level` | raw integer | **Voltage** produced by the **water level sensor** |
 | `received_at` | ISO 8601 UTC | **Backend clock**; the firmware sends **no timestamp** |
 
-The **pressure conversion** (`1 atm = 101325 Pa`) happens **only at the API
-boundary** — the **ingestion pipeline** and **InfluxDB** keep storing **pascal**,
-so the **stored history stays in a single unit**.
+The **pressure conversion** (`1 atm = 101325 Pa`) and response rounding happen
+**only at the API boundary** — the **ingestion pipeline** and **InfluxDB** keep
+storing the original values in **pascal**, so the **stored history keeps full
+precision in a single unit**.
 
 ## Historical readings
 

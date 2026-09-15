@@ -12,9 +12,9 @@ from app.models.weather import WeatherSnapshot
 def make_snapshot() -> WeatherSnapshot:
     return WeatherSnapshot(
         device_id="station-01",
-        air_temperature=23.45,
-        air_pressure=101325.0,
-        air_humidity=45.0,
+        air_temperature=23.456,
+        air_pressure=101234.567,
+        air_humidity=45.678,
         air_quality=4,
         daylight=2748,
         water_level=12,

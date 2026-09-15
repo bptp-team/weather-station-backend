@@ -93,9 +93,9 @@ def test_ingestion_saves_complete_snapshot_before_publishing() -> None:
     timestamp = datetime(2026, 9, 6, tzinfo=timezone.utc)
 
     for measurement, value in (
-        ("airTemperature", 23.45),
-        ("airPressure", 101325.0),
-        ("airHumidity", 45.0),
+        ("airTemperature", 23.456),
+        ("airPressure", 101234.567),
+        ("airHumidity", 45.678),
         ("daylight", 2748),
         ("waterLevel", 12),
         ("airQuality", 4),
@@ -139,9 +139,9 @@ def test_snapshot_maps_to_influx_point() -> None:
     timestamp = datetime(2026, 9, 6, tzinfo=timezone.utc)
 
     for measurement, value in (
-        ("airTemperature", 23.45),
-        ("airPressure", 101325.0),
-        ("airHumidity", 45.0),
+        ("airTemperature", 23.456),
+        ("airPressure", 101234.567),
+        ("airHumidity", 45.678),
         ("daylight", 2748),
         ("waterLevel", 12),
         ("airQuality", 4),
@@ -152,9 +152,9 @@ def test_snapshot_maps_to_influx_point() -> None:
 
     assert point.measurement == "weather_reading"
     assert point.tags == {"device_id": "station-01"}
-    assert point.fields["air_temperature"] == 23.45
-    assert point.fields["air_pressure"] == 101325.0
-    assert point.fields["air_humidity"] == 45.0
+    assert point.fields["air_temperature"] == 23.456
+    assert point.fields["air_pressure"] == 101234.567
+    assert point.fields["air_humidity"] == 45.678
     assert point.fields["daylight"] == 2748
     assert point.fields["water_level"] == 12
     assert point.fields["air_quality"] == 4
