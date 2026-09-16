@@ -10,5 +10,5 @@ class HistoricalReading(BaseModel):
     air_humidity: float
     air_quality: int
     daylight: int
-    water_level: int
+    precipitation_interval: float
     received_at: str

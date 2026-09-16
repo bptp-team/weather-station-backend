@@ -6,8 +6,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
 
 from app.api.formatters.weather import snapshot_to_api_payload
-from app.models.weather import WeatherSnapshot
 from app.services.broadcaster import SnapshotSubscription, SubscriptionClosed
+from app.models.weather import WeatherSnapshot
 
 
 SUBSCRIPTION_POLL_INTERVAL_SECONDS = 15.0
@@ -16,7 +16,9 @@ SUBSCRIPTION_POLL_INTERVAL_SECONDS = 15.0
 router = APIRouter(prefix="/readings", tags=["readings"])
 
 
-async def _stream_snapshots(subscription: SnapshotSubscription) -> AsyncIterator[str]:
+async def _stream_snapshots(
+    subscription: SnapshotSubscription,
+) -> AsyncIterator[str]:
     try:
         while True:
             snapshot = await asyncio.to_thread(
@@ -71,7 +73,7 @@ def _serialize_value(value: object) -> str:
                         '"air_humidity": 45.0, '
                         '"air_quality": 4, '
                         '"daylight": 2748, '
-                        '"water_level": 12, '
+                        '"precipitation_interval": 0.0, '
                         '"received_at": "2026-09-06T00:00:00+00:00"'
                         "}\n\n"
                     ),
@@ -83,8 +85,9 @@ def _serialize_value(value: object) -> str:
 async def stream_readings(station_id: str, request: Request) -> StreamingResponse:
     """Stream snapshots for one station to the caller as they are aggregated.
 
-    Every value is forwarded exactly as the firmware published it, with one
-    exception: `air_pressure`, which is converted from pascal to atmospheres.
+    Every value is forwarded with formatting applied at the API boundary:
+    `air_pressure` is converted from pascal to atmospheres, and raw water level ADC
+    is converted to interval precipitation with drainage compensation.
 
     - `device_id`: identifier of the station that produced the snapshot, taken
       from the MQTT topic `weather/<device-id>/<measurement>`.
@@ -96,7 +99,7 @@ async def stream_readings(station_id: str, request: Request) -> StreamingRespons
     - `air_quality`: air quality reading as a raw integer. The backend neither
       scales nor classifies it.
     - `daylight`: the voltage produced by the LDR module.
-    - `water_level`: the voltage produced by the water level sensor.
+    - `precipitation_interval`: estimated precipitation depth in mm during the interval.
     - `received_at`: ISO 8601 UTC timestamp of when the backend received the
       measurement that completed the snapshot. The backend clock is used
       because the firmware does not publish a timestamp.

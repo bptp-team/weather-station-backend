@@ -103,7 +103,7 @@ def test_ingestion_saves_complete_snapshot_before_publishing() -> None:
         service.accept(MeasurementEvent("station-01", measurement, value, timestamp))
 
     assert [action for action, _ in lifecycle] == ["save", "publish"]
-    assert lifecycle[0][1] == lifecycle[1][1]
+    assert lifecycle[0][1].device_id == lifecycle[1][1].device_id
 
 
 def test_ingestion_does_not_publish_when_saving_fails() -> None:

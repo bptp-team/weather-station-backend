@@ -24,6 +24,7 @@ class WeatherSnapshot:
     daylight: int
     water_level: int
     received_at: datetime
+    precipitation_interval: float = 0.0
 
 
 @dataclass(frozen=True)

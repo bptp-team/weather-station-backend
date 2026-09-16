@@ -1,5 +1,6 @@
 import asyncio
 import json
+from dataclasses import replace
 from datetime import datetime, timezone
 
 import pytest
@@ -27,11 +28,18 @@ def make_snapshot(
     )
 
 
+def make_reading(
+    device_id: str = "station-01",
+    air_pressure: float = 101234.567,
+) -> WeatherSnapshot:
+    return make_snapshot(device_id, air_pressure)
+
+
 def test_subscriber_receives_future_snapshot_as_sse_data() -> None:
     broadcaster = SnapshotBroadcaster()
     subscription = broadcaster.subscribe("station-01")
     stream = _stream_snapshots(subscription)
-    snapshot = make_snapshot()
+    snapshot = make_reading()
 
     broadcaster.publish(snapshot)
 
@@ -45,12 +53,12 @@ def test_subscriber_receives_future_snapshot_as_sse_data() -> None:
         "air_humidity": 45.68,
         "air_quality": 4,
         "daylight": 2748,
-        "water_level": 12,
+        "precipitation_interval": 0.0,
         "received_at": "2026-09-06T00:00:00+00:00",
     }
 
     asyncio.run(stream.aclose())
-    broadcaster.publish(make_snapshot("station-02"))
+    broadcaster.publish(make_reading("station-02"))
 
 
 def test_snapshot_air_pressure_is_streamed_in_atm() -> None:
@@ -58,13 +66,33 @@ def test_snapshot_air_pressure_is_streamed_in_atm() -> None:
     subscription = broadcaster.subscribe("station-01")
     stream = _stream_snapshots(subscription)
 
-    broadcaster.publish(make_snapshot(air_pressure=95000.0))
+    broadcaster.publish(make_reading(air_pressure=95000.0))
 
     event = asyncio.run(stream.__anext__())
     payload = json.loads(event.removeprefix("data: ").strip())
 
     assert payload["air_pressure"] == 0.94
 
+    asyncio.run(stream.aclose())
+
+
+def test_new_subscriber_receives_latest_daily_snapshot() -> None:
+    broadcaster = SnapshotBroadcaster()
+    latest_snapshot = make_snapshot()
+    latest_snapshot = replace(
+        latest_snapshot,
+        precipitation_interval=0.5,
+    )
+    broadcaster.publish(latest_snapshot)
+
+    subscription = broadcaster.subscribe("station-01")
+    stream = _stream_snapshots(subscription)
+    event = asyncio.run(stream.__anext__())
+    payload = json.loads(event.removeprefix("data: ").strip())
+
+    assert payload["precipitation_interval"] == 0.5
+    assert "water_level" not in payload
+    assert "precipitation_accumulated" not in payload
     asyncio.run(stream.aclose())
 
 
@@ -84,8 +112,8 @@ def test_subscriber_only_receives_snapshots_for_its_station() -> None:
     subscription = broadcaster.subscribe("station-01")
     stream = _stream_snapshots(subscription)
 
-    broadcaster.publish(make_snapshot("station-02"))
-    broadcaster.publish(make_snapshot("station-01"))
+    broadcaster.publish(make_reading("station-02"))
+    broadcaster.publish(make_reading("station-01"))
 
     event = asyncio.run(stream.__anext__())
 

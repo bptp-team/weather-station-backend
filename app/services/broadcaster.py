@@ -39,6 +39,7 @@ class SnapshotBroadcaster:
     def __init__(self, *, queue_size: int = 10) -> None:
         self._queue_size = queue_size
         self._subscriptions: dict[SnapshotSubscription, Queue[WeatherSnapshot | None]] = {}
+        self._latest_snapshots: dict[str, WeatherSnapshot] = {}
         self._lock = Lock()
 
     def subscribe(self, station_id: str) -> SnapshotSubscription:
@@ -49,6 +50,10 @@ class SnapshotBroadcaster:
         )
         with self._lock:
             self._subscriptions[subscription] = subscription._queue
+            latest_snapshot = self._latest_snapshots.get(station_id)
+
+        if latest_snapshot is not None:
+            self._put_latest(subscription._queue, latest_snapshot)
         return subscription
 
     def unsubscribe(self, subscription: SnapshotSubscription) -> None:
@@ -60,6 +65,7 @@ class SnapshotBroadcaster:
 
     def publish(self, snapshot: WeatherSnapshot) -> None:
         with self._lock:
+            self._latest_snapshots[snapshot.device_id] = snapshot
             subscriptions = tuple(self._subscriptions.items())
 
         for subscription, queue in subscriptions:
@@ -70,6 +76,7 @@ class SnapshotBroadcaster:
         with self._lock:
             queues = tuple(self._subscriptions.values())
             self._subscriptions.clear()
+            self._latest_snapshots.clear()
 
         for queue in queues:
             self._signal_close(queue)

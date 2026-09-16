@@ -50,6 +50,6 @@ def test_app_rejects_wildcard_cors_headers() -> None:
 
 
 def test_app_has_no_allowed_origins_by_default() -> None:
-    app = create_test_app(Settings())
+    app = create_test_app(Settings(_env_file=None))
 
     assert app.user_middleware[0].kwargs["allow_origins"] == []

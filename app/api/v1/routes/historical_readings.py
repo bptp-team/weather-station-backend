@@ -2,7 +2,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query, Request, status
 
-from app.api.formatters.weather import snapshot_to_api_payload
+from app.api.formatters.weather import format_snapshots_history
 from app.schemas.historical_reading import HistoricalReading
 from app.services.historical_readings import (
     HistoricalReadingsService,
@@ -40,4 +40,4 @@ def read_historical_readings(
         snapshots = service.read(station_id, from_, to)
     except InvalidReadingRange as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from error
-    return [snapshot_to_api_payload(snapshot) for snapshot in snapshots]
+    return format_snapshots_history(snapshots)

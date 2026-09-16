@@ -16,6 +16,11 @@ class Settings(BaseSettings):
     influx_measurement: str = "weather_reading"
     snapshot_window_seconds: int = 30
 
+    rain_drain_rate_ml_s: float = 1.25
+    rain_funnel_ml_per_mm: float = 4.42
+    rain_adc_threshold: int = 50
+    rain_adc_scale: float = 10.0
+
     @field_validator("allowed_origins")
     @classmethod
     def reject_wildcard_origin(cls, value: str) -> str:
