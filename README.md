@@ -133,3 +133,66 @@ Run the backend with:
 ```text
 make dev
 ```
+
+## Docker
+
+The `Dockerfile` installs the **locked dependencies** with **uv** and runs the
+app with `fastapi run` on **Python 3.12**. The **final image** carries **only
+the virtual environment and the `app/` package**: **no uv, no lockfile and no
+development dependencies**.
+
+### Build
+
+```sh
+docker build -t weather-station-backend .
+```
+
+The build uses `uv sync --locked`, which **fails if `uv.lock` is out of date**
+instead of resolving the dependencies again. It is the same check `make sync`
+performs.
+
+### Run
+
+**All configuration comes from the environment**, never from the image. The
+`.env` file **stays on the host** and is read at **run time**:
+
+```sh
+docker run -d --name weather-station-backend --env-file .env -p 8000:8000 weather-station-backend
+```
+
+Without `--env-file`, the defaults in `app/core/settings.py` point at
+`127.0.0.1`, which inside a container means **the container itself**. Set at
+least `WEATHER_MQTT_HOST`, `WEATHER_INFLUX_URL` and `WEATHER_ALLOWED_ORIGINS`.
+
+In **production**, bind to `127.0.0.1` so the container is **reachable only by
+the reverse proxy** on the same machine:
+
+```sh
+docker run -d --name weather-station-backend --restart unless-stopped --env-file .env -p 127.0.0.1:8000:8000 weather-station-backend
+```
+
+### Verify
+
+```sh
+docker exec weather-station-backend id             # uid=10001(app) gid=10001(app)
+curl http://localhost:8000/openapi.json             # API answering
+curl -N http://localhost:8000/api/v1/readings/station-01/stream
+docker image ls weather-station-backend             # total image size
+docker history weather-station-backend              # size of each layer
+```
+
+### Image details
+
+- The app runs as a **non-root user** with **fixed UID and GID** `10001` and
+  listens on port `8000`.
+- The **virtual environment** and the **source files** belong to `root`, so the
+  process can **read them but cannot change them**.
+- `--workers 1` is **explicit**: the **MQTT subscription** and the **InfluxDB
+  writes** live **inside the application process**, so **every extra worker
+  would store each reading again**.
+- `PYTHONDONTWRITEBYTECODE=1` keeps Python from writing `.pyc` files next to
+  the source at start up, which **a non-root user cannot do**. The bytecode is
+  **compiled during the build** instead.
+- `.dockerignore` **blocks every file by default**. When the build starts
+  needing a **new file**, **add it both** to `.dockerignore` **and** to a
+  `COPY` instruction in the `Dockerfile`.
