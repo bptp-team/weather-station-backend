@@ -107,5 +107,6 @@ class PrecipitationTracker:
         )
 
     def _is_new_utc_day(self, received_at: datetime) -> bool:
-        assert self._prev_time is not None
+        if self._prev_time is None:
+            return False
         return received_at.astimezone(timezone.utc).date() != self._prev_time.astimezone(timezone.utc).date()
