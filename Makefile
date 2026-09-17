@@ -1,6 +1,8 @@
+-include .env
+
 UV_VERSION ?= 0.12.10
 
-.PHONY: uv sync dev test
+.PHONY: uv sync dev prod test
 
 # Local bootstrap only: CI gets uv from the setup-uv action instead.
 uv:
@@ -12,6 +14,11 @@ sync:
 
 dev:
 	uv run fastapi dev app/main.py
+
+prod:
+	docker build -t weather-station-backend .
+	docker rm -f weather-station-backend
+	docker run -d --name weather-station-backend --restart unless-stopped --env-file .env -p 127.0.0.1:$(WEATHER_BACKEND_PORT):8000 weather-station-backend
 
 test:
 	uv run pytest

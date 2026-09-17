@@ -26,6 +26,7 @@ RUN groupadd --system --gid 10001 app \
  && useradd --system --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin app
 
 ENV PATH="/app/.venv/bin:$PATH" \
+    PYTHONOPTIMIZE=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
