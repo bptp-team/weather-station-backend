@@ -122,7 +122,7 @@ def test_read_converts_arrow_nanosecond_timestamps_to_python_datetime() -> None:
 
     snapshots = repository.read("station-01", START, END)
 
-    expected_received_at = datetime(1970, 1, 1) + timedelta(
+    expected_received_at = datetime(1970, 1, 1, tzinfo=timezone.utc) + timedelta(
         microseconds=1789329373262545247 // 1_000
     )
     assert snapshots[0].received_at == expected_received_at

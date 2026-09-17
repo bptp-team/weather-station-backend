@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Protocol
 
 import pyarrow as pa
@@ -92,6 +92,10 @@ ORDER BY time
         received_at = row["time"]
         if isinstance(received_at, str):
             received_at = datetime.fromisoformat(received_at)
+        if received_at.tzinfo is None or received_at.utcoffset() is None:
+            received_at = received_at.replace(tzinfo=timezone.utc)
+        else:
+            received_at = received_at.astimezone(timezone.utc)
         return WeatherSnapshot(
             device_id=str(row["device_id"]),
             air_temperature=float(row["air_temperature"]),
