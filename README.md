@@ -186,7 +186,7 @@ docker run -d --name weather-station-backend --restart unless-stopped --env-file
 ### Verify
 
 ```sh
-docker exec weather-station-backend id             # uid=10001(app) gid=10001(app)
+docker exec weather-station-backend id             # uid=10001(app)
 curl http://localhost:8000/openapi.json             # API answering
 curl -N http://localhost:8000/api/v1/readings/station-01/stream
 docker image ls weather-station-backend             # total image size
@@ -195,16 +195,16 @@ docker history weather-station-backend              # size of each layer
 
 ### Image details
 
-- The app runs as a **non-root user** with **fixed UID and GID** `10001` and
-  listens on port `8000`.
+- The app runs as a **non-root user** with **fixed UID** `10001` and listens
+  on port `8000`.
 - The **virtual environment** and the **source files** belong to `root`, so the
   process can **read them but cannot change them**.
 - `--workers 1` is **explicit**: the **MQTT subscription** and the **InfluxDB
   writes** live **inside the application process**, so **every extra worker
   would store each reading again**.
-- `PYTHONDONTWRITEBYTECODE=1` keeps Python from writing `.pyc` files next to
-  the source at start up, which **a non-root user cannot do**. The bytecode is
-  **compiled during the build** instead.
+- The **dependencies' bytecode** is **compiled during the build**
+  (`UV_COMPILE_BYTECODE=1`), so start up does not depend on writing `.pyc`
+  files, which **a non-root user cannot do**.
 - `.dockerignore` **blocks every file by default**. When the build starts
   needing a **new file**, **add it both** to `.dockerignore` **and** to a
   `COPY` instruction in the `Dockerfile`.
