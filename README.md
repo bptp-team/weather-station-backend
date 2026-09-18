@@ -128,10 +128,22 @@ the **API**. Separate multiple origins with **commas and no spaces**, for
 example `http://localhost:5173,http://192.168.1.10:5173`. The local
 **InfluxDB 3** development connection **does not use authentication**.
 
-Run the backend with:
+Run the backend in development mode with:
 
 ```text
 make dev
+```
+
+For a production-like app, the current command is:
+
+```text
+make prod
+```
+
+This runs:
+
+```text
+uv run fastapi run app/main.py --host 0.0.0.0 --port $(WEATHER_BACKEND_PORT) --workers 1
 ```
 
 ## Docker

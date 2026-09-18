@@ -16,9 +16,7 @@ dev:
 	uv run fastapi dev app/main.py
 
 prod:
-	docker build -t weather-station-backend .
-	docker rm -f weather-station-backend
-	docker run -d --name weather-station-backend --restart unless-stopped --env-file .env -p 127.0.0.1:$(WEATHER_BACKEND_PORT):8000 weather-station-backend
+	uv run fastapi run app/main.py --host 0.0.0.0 --port $(WEATHER_BACKEND_PORT) --workers 1
 
 test:
 	uv run pytest
