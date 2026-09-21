@@ -84,7 +84,15 @@ The weather station adapts a resistive PCB water level probe mounted vertically 
 - **Funnel Area ($A_f$):** For diameter $D_f = 7.5\text{ cm}$, area $A_f = \pi \times (3.75\text{ cm})^2 \approx 44.18\text{ cm}^2$.
 - **Volume to Rain Equivalent:** $1\text{ mm of rain} \equiv 4.42\text{ mL}$ ($4.42\text{ mL/mm}$).
 - **ADC to Volume ($V$):**
-  $$V(\text{ADC}) = \begin{cases} 0.0\text{ mL}, & \text{ADC} \le 50 \\ \frac{\text{ADC} - 50}{10.0}\text{ mL}, & \text{ADC} > 50 \end{cases}$$
+
+  ```math
+  V(\text{ADC}) =
+  \begin{cases}
+      0.0\ \text{mL}                             & \text{if } \text{ADC} \le 50 \\
+      \dfrac{\text{ADC} - 50}{10.0}\ \text{mL} & \text{if } \text{ADC} > 50
+  \end{cases}
+  ```
+
 - **Drainage Mass Balance:**
   - $V_{\text{drained}} = \min(V_{\text{prev}}, Q_{\text{drain}} \times \Delta t)$, where $Q_{\text{drain}}$ defaults to $1.25\text{ mL/s}$.
   - $V_{\text{rain}} = \max(0.0, (V_{\text{curr}} - V_{\text{prev}}) + V_{\text{drained}})$.
