@@ -124,8 +124,8 @@ jobs:
       - name: Deploy ${{ needs.publish.outputs.image }}
         run: >-
           az vm run-command invoke
-          --resource-group ${{ vars.AZURE_RESOURCE_GROUP }}
-          --name ${{ vars.AZURE_VM_NAME }}
+          --resource-group ${{ vars.RESOURCE_GROUP_NAME }}
+          --name ${{ vars.VM_NAME }}
           --command-id RunShellScript
           --scripts "${{ vars.DEPLOY_SCRIPT }} backend ${{ github.ref_name }}"
           --query "value[0].message" --output tsv
