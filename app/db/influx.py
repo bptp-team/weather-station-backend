@@ -23,7 +23,9 @@ def create_influx_client(settings: Settings) -> InfluxDBClient3:
 
 def ensure_database_exists(settings: Settings) -> None:
     request_url = f"{settings.influx_url.rstrip('/')}/api/v3/configure/database"
-    request_body = json.dumps({"db": settings.influx_database}).encode("utf-8")
+    request_body = json.dumps(
+        {"db": settings.influx_database, "retention_period": "15d"}
+    ).encode("utf-8")
     request = Request(
         request_url,
         data=request_body,
