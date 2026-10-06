@@ -32,12 +32,17 @@ weather/<device-id>/airHumidity
 weather/<device-id>/daylight
 weather/<device-id>/waterLevel
 weather/<device-id>/airQuality
+weather/<device-id>/latitude
+weather/<device-id>/longitude
 ```
 
-It validates the **plain-text payloads**, collects **all six measurements** per
-device within **30 seconds**, and writes **one complete snapshot** to
-**InfluxDB**. **Incomplete snapshots are discarded.** The **backend timestamp**
-is used because the **firmware does not publish one**.
+It validates the **plain-text payloads**, including coordinate ranges
+(`latitude`: -90 to 90, `longitude`: -180 to 180), collects **all eight
+measurements** per device within **30 seconds**, and writes **one complete
+snapshot** to **InfluxDB**. **Incomplete snapshots are discarded.** The
+**backend timestamp** is used because the **firmware does not publish one**.
+Coordinates are WGS 84 signed decimal degrees; south and west values are
+negative.
 
 ## Streaming
 
@@ -53,7 +58,7 @@ receives the latest snapshot for its station. A `: keep-alive` comment frame is 
 seconds of silence** so **proxies keep the connection open**:
 
 ```text
-data: {"device_id": "station-01", "air_temperature": 23.45, "air_pressure": 1.0, "air_humidity": 45.0, "air_quality": 4, "daylight": 2748, "precipitation_interval": 0.0, "received_at": "2026-09-06T00:00:00+00:00"}
+data: {"device_id": "station-01", "air_temperature": 23.45, "air_pressure": 1.0, "air_humidity": 45.0, "air_quality": 4, "daylight": 2748, "latitude": -23.20027778, "longitude": -45.89111111, "precipitation_interval": 0.0, "received_at": "2026-09-06T00:00:00+00:00"}
 ```
 
 The floating-point measurements (`air_temperature`, `air_pressure`, `air_humidity`,
@@ -70,6 +75,8 @@ forwarded as integers. `air_pressure` is converted from **pascal** to
 | `air_humidity` | % | **Relative humidity** |
 | `air_quality` | raw integer | **Neither scaled nor classified** by the backend |
 | `daylight` | raw integer | **Voltage** produced by the **LDR module** |
+| `latitude` | decimal degrees | WGS 84 station latitude; south is negative |
+| `longitude` | decimal degrees | WGS 84 station longitude; west is negative |
 | `precipitation_interval` | mm | Estimated **rainfall in the interval** between readings with **drainage compensation** |
 | `received_at` | ISO 8601 UTC | **Backend clock**; the firmware sends **no timestamp** |
 
@@ -105,7 +112,10 @@ If one is provided, both must be provided. The interval is half-open (`[from, to
 and cannot exceed 15 days; exactly 15 days is accepted. An empty result returns
 `200 []`.
 
-Each historical object has the same public weather fields as a streaming event.
+Each historical object has the same public weather fields as a streaming event,
+including the station coordinates. Existing readings must be backfilled with
+the fixed station location; new readings store the coordinates received over
+MQTT with the other measurements.
 The raw `water_level` ADC reading is retained internally for calculating
 `precipitation_interval`, but is not returned by this endpoint.
 

@@ -18,17 +18,24 @@ def snapshot_to_point(
     *,
     measurement_name: str,
 ) -> InfluxPoint:
+    if snapshot.latitude is None or snapshot.longitude is None:
+        raise ValueError("Both station coordinates are required to save a snapshot")
+
+    fields = {
+        "air_temperature": snapshot.air_temperature,
+        "air_pressure": snapshot.air_pressure,
+        "air_humidity": snapshot.air_humidity,
+        "daylight": snapshot.daylight,
+        "water_level": snapshot.water_level,
+        "air_quality": snapshot.air_quality,
+        "latitude": snapshot.latitude,
+        "longitude": snapshot.longitude,
+    }
+
     return InfluxPoint(
         measurement=measurement_name,
         tags={"device_id": snapshot.device_id},
-        fields={
-            "air_temperature": snapshot.air_temperature,
-            "air_pressure": snapshot.air_pressure,
-            "air_humidity": snapshot.air_humidity,
-            "daylight": snapshot.daylight,
-            "water_level": snapshot.water_level,
-            "air_quality": snapshot.air_quality,
-        },
+        fields=fields,
         time=snapshot.received_at,
     )
 

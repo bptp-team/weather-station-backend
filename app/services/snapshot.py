@@ -11,6 +11,8 @@ _REQUIRED_MEASUREMENTS = {
     "airQuality",
     "daylight",
     "waterLevel",
+    "latitude",
+    "longitude",
 }
 
 
@@ -52,6 +54,8 @@ class SnapshotAggregator:
                 daylight=int(pending.values["daylight"]),
                 water_level=int(pending.values["waterLevel"]),
                 received_at=received_at,
+                latitude=float(pending.values["latitude"]),
+                longitude=float(pending.values["longitude"]),
             )
             del self._pending[device_id]
             return snapshot

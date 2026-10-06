@@ -24,6 +24,8 @@ class WeatherSnapshot:
     daylight: int
     water_level: int
     received_at: datetime
+    latitude: float | None = None
+    longitude: float | None = None
     precipitation_interval: float = 0.0
 
 

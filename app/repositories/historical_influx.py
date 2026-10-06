@@ -34,11 +34,19 @@ SELECT
     air_humidity,
     air_quality,
     daylight,
-    water_level
+    water_level,
+    latitude,
+    longitude
 FROM {self._quote_identifier(self._measurement_name)}
 WHERE device_id = $station_id
   AND time >= $start
   AND time < $end
+  AND air_temperature IS NOT NULL
+  AND air_pressure IS NOT NULL
+  AND air_humidity IS NOT NULL
+  AND air_quality IS NOT NULL
+  AND daylight IS NOT NULL
+  AND water_level IS NOT NULL
 ORDER BY time
 '''
         result = self._client.query(
@@ -76,9 +84,9 @@ ORDER BY time
         original_schema = result.schema
         normalized_schema = pa.schema(
             [
-            field.with_type(pa.timestamp("us", tz=field.type.tz))
-            if pa.types.is_timestamp(field.type) and field.type.unit != "us"
-            else field
+                field.with_type(pa.timestamp("us", tz=field.type.tz))
+                if pa.types.is_timestamp(field.type) and field.type.unit != "us"
+                else field
                 for field in original_schema
             ],
             metadata=original_schema.metadata,
@@ -96,6 +104,12 @@ ORDER BY time
             received_at = received_at.replace(tzinfo=timezone.utc)
         else:
             received_at = received_at.astimezone(timezone.utc)
+        latitude = row.get("latitude")
+        longitude = row.get("longitude")
+        if latitude is None or longitude is None:
+            raise ValueError(
+                "Historical reading coordinates must be backfilled before serving history"
+            )
         return WeatherSnapshot(
             device_id=str(row["device_id"]),
             air_temperature=float(row["air_temperature"]),
@@ -105,4 +119,6 @@ ORDER BY time
             daylight=int(row["daylight"]),
             water_level=int(row["water_level"]),
             received_at=received_at,
+            latitude=float(latitude),
+            longitude=float(longitude),
         )

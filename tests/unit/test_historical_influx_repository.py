@@ -25,6 +25,21 @@ class FakeInfluxClient:
 
     def query(self, query: str, **kwargs: object) -> FakeQueryResult:
         self.calls.append({"query": query, **kwargs})
+        query_parameters = kwargs.get("query_parameters")
+        if (
+            isinstance(self.result, FakeQueryResult)
+            and isinstance(query_parameters, dict)
+            and "start" in query_parameters
+        ):
+            start = datetime.fromisoformat(query_parameters["start"])
+            end = datetime.fromisoformat(query_parameters["end"])
+            return FakeQueryResult(
+                [
+                    row
+                    for row in self.result.rows
+                    if start <= row["time"] < end
+                ]
+            )
         return self.result
 
 
@@ -57,6 +72,8 @@ def test_read_queries_station_range_and_maps_all_measurements(
                 "air_quality": 4,
                 "daylight": 2748,
                 "water_level": 12,
+                "latitude": -23.20027778,
+                "longitude": -45.89111111,
             }
         ]
     )
@@ -69,6 +86,8 @@ def test_read_queries_station_range_and_maps_all_measurements(
     assert snapshots[0].air_quality == 4
     assert snapshots[0].daylight == 2748
     assert snapshots[0].water_level == 12
+    assert snapshots[0].latitude == -23.20027778
+    assert snapshots[0].longitude == -45.89111111
     assert snapshots[0].received_at == datetime(2026, 9, 6, 10, tzinfo=timezone.utc)
 
     call = client.calls[0]
@@ -84,6 +103,31 @@ def test_read_queries_station_range_and_maps_all_measurements(
     assert "device_id = $station_id" in call["query"]
     assert "time >= $start" in call["query"]
     assert "time < $end" in call["query"]
+    assert "latitude" in call["query"]
+    assert "longitude" in call["query"]
+
+
+def test_read_rejects_rows_without_backfilled_station_coordinates(
+    client: FakeInfluxClient,
+    repository: HistoricalInfluxRepository,
+) -> None:
+    client.result = FakeQueryResult(
+        [
+            {
+                "time": datetime(2026, 9, 6, 10, tzinfo=timezone.utc),
+                "device_id": "station-01",
+                "air_temperature": 23.45,
+                "air_pressure": 101325.0,
+                "air_humidity": 45.0,
+                "air_quality": 4,
+                "daylight": 2748,
+                "water_level": 12,
+            }
+        ]
+    )
+
+    with pytest.raises(ValueError, match="coordinates must be backfilled"):
+        repository.read("station-01", START, END)
 
 
 def test_read_returns_empty_result_without_rows(
@@ -111,6 +155,8 @@ def test_read_converts_arrow_nanosecond_timestamps_to_python_datetime() -> None:
                 "air_quality": [4],
                 "daylight": [2748],
                 "water_level": [12],
+                "latitude": [-23.20027778],
+                "longitude": [-45.89111111],
             }
         )
     )

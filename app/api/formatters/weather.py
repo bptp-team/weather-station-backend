@@ -14,6 +14,8 @@ def snapshot_to_api_payload(
         "air_humidity": round(snapshot.air_humidity, 2),
         "air_quality": snapshot.air_quality,
         "daylight": snapshot.daylight,
+        "latitude": snapshot.latitude,
+        "longitude": snapshot.longitude,
         "precipitation_interval": round(snapshot.precipitation_interval, 2),
         "received_at": snapshot.received_at.isoformat(),
     }

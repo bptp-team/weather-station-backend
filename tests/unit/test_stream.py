@@ -25,6 +25,8 @@ def make_snapshot(
         daylight=2748,
         water_level=12,
         received_at=datetime(2026, 9, 6, tzinfo=timezone.utc),
+        latitude=-23.20027778,
+        longitude=-45.89111111,
     )
 
 
@@ -53,6 +55,8 @@ def test_subscriber_receives_future_snapshot_as_sse_data() -> None:
         "air_humidity": 45.68,
         "air_quality": 4,
         "daylight": 2748,
+        "latitude": -23.20027778,
+        "longitude": -45.89111111,
         "precipitation_interval": 0.0,
         "received_at": "2026-09-06T00:00:00+00:00",
     }

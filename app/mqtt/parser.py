@@ -1,11 +1,19 @@
+import math
 from datetime import datetime, timezone
 
 from app.models.weather import MeasurementEvent, MeasurementValue
 
 
-_FLOAT_MEASUREMENTS = {"airTemperature", "airPressure", "airHumidity"}
+_FLOAT_MEASUREMENTS = {
+    "airTemperature",
+    "airPressure",
+    "airHumidity",
+    "latitude",
+    "longitude",
+}
 _INT_MEASUREMENTS = {"daylight", "waterLevel", "airQuality"}
 _MEASUREMENTS = _FLOAT_MEASUREMENTS | _INT_MEASUREMENTS
+_COORDINATE_LIMITS = {"latitude": (-90, 90), "longitude": (-180, 180)}
 
 
 def parse_message(
@@ -44,6 +52,11 @@ def parse_message(
         raise ValueError("MQTT payload must be UTF-8") from error
     except ValueError as error:
         raise ValueError(f"Invalid value for {measurement}: {text!r}") from error
+
+    if measurement in _COORDINATE_LIMITS:
+        minimum, maximum = _COORDINATE_LIMITS[measurement]
+        if not math.isfinite(value) or not minimum <= value <= maximum:
+            raise ValueError(f"Invalid coordinate for {measurement}: {text!r}")
 
     return MeasurementEvent(
         device_id=device_id,

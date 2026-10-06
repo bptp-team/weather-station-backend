@@ -15,6 +15,8 @@ def test_snapshot_to_api_payload_matches_public_snapshot_contract() -> None:
         daylight=2748,
         water_level=150,
         received_at=datetime(2026, 9, 6, tzinfo=timezone.utc),
+        latitude=-23.20027778,
+        longitude=-45.89111111,
     )
 
     snapshot = replace(
@@ -29,6 +31,8 @@ def test_snapshot_to_api_payload_matches_public_snapshot_contract() -> None:
         "air_humidity": 45.68,
         "air_quality": 4,
         "daylight": 2748,
+        "latitude": -23.20027778,
+        "longitude": -45.89111111,
         "precipitation_interval": 2.26,
         "received_at": "2026-09-06T00:00:00+00:00",
     }
@@ -77,4 +81,3 @@ def test_format_snapshots_history_processes_precipitation_chronologically() -> N
     assert len(history) == 2
     assert history[0]["precipitation_interval"] == 0.0
     assert history[1]["precipitation_interval"] == round(10.0 / 4.42, 2)
-

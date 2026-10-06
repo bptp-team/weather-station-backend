@@ -19,6 +19,8 @@ def make_snapshot() -> WeatherSnapshot:
         daylight=2748,
         water_level=12,
         received_at=datetime(2026, 9, 6, tzinfo=timezone.utc),
+        latitude=-23.20027778,
+        longitude=-45.89111111,
     )
 
 
@@ -66,6 +68,8 @@ def test_history_returns_snapshots_with_interval_precipitation() -> None:
             "air_humidity": 45.68,
             "air_quality": 4,
             "daylight": 2748,
+            "latitude": -23.20027778,
+            "longitude": -45.89111111,
             "precipitation_interval": 0.0,
             "received_at": "2026-09-06T00:00:00+00:00",
         }
@@ -124,7 +128,6 @@ def test_history_returns_empty_list_when_no_snapshot_exists() -> None:
 
     assert response.status_code == 200
     assert response.json() == []
-
 
 def test_history_rejects_only_one_date_parameter() -> None:
     service = FakeHistoricalService([])
