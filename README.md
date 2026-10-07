@@ -111,6 +111,8 @@ The `from` and `to` parameters are optional when requesting the current UTC day.
 If one is provided, both must be provided. The interval is half-open (`[from, to)`)
 and cannot exceed 15 days; exactly 15 days is accepted. An empty result returns
 `200 []`.
+The backend queries InfluxDB sequentially in UTC-day windows, then combines the
+results into the single JSON list returned by the endpoint.
 
 Each historical object has the same public weather fields as a streaming event,
 including the station coordinates. Existing readings must be backfilled with

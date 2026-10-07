@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any, Protocol
 
 import pyarrow as pa
@@ -49,18 +49,31 @@ WHERE device_id = $station_id
   AND water_level IS NOT NULL
 ORDER BY time
 '''
-        result = self._client.query(
-            query,
-            language="sql",
-            mode="all",
-            database=self._database,
-            query_parameters={
-                "station_id": station_id,
-                "start": start.isoformat(),
-                "end": end.isoformat(),
-            },
-        )
-        return [self._row_to_snapshot(row) for row in self._result_rows(result)]
+        requested_start = start.astimezone(timezone.utc)
+        requested_end = end.astimezone(timezone.utc)
+        cursor = requested_start.replace(hour=0, minute=0, second=0, microsecond=0)
+        snapshots: list[WeatherSnapshot] = []
+
+        while cursor < requested_end:
+            query_end = cursor + timedelta(days=1)
+            result = self._client.query(
+                query,
+                language="sql",
+                mode="all",
+                database=self._database,
+                query_parameters={
+                    "station_id": station_id,
+                    "start": cursor.isoformat(),
+                    "end": query_end.isoformat(),
+                },
+            )
+            for row in self._result_rows(result):
+                received_at = self._normalize_received_at(row["time"])
+                if requested_start <= received_at < requested_end:
+                    snapshots.append(self._row_to_snapshot(row))
+            cursor = query_end
+
+        return snapshots
 
     def close(self) -> None:
         self._client.close()
@@ -97,13 +110,7 @@ ORDER BY time
 
     @staticmethod
     def _row_to_snapshot(row: dict[str, Any]) -> WeatherSnapshot:
-        received_at = row["time"]
-        if isinstance(received_at, str):
-            received_at = datetime.fromisoformat(received_at)
-        if received_at.tzinfo is None or received_at.utcoffset() is None:
-            received_at = received_at.replace(tzinfo=timezone.utc)
-        else:
-            received_at = received_at.astimezone(timezone.utc)
+        received_at = HistoricalInfluxRepository._normalize_received_at(row["time"])
         latitude = row.get("latitude")
         longitude = row.get("longitude")
         if latitude is None or longitude is None:
@@ -122,3 +129,11 @@ ORDER BY time
             latitude=float(latitude),
             longitude=float(longitude),
         )
+
+    @staticmethod
+    def _normalize_received_at(received_at: datetime | str) -> datetime:
+        if isinstance(received_at, str):
+            received_at = datetime.fromisoformat(received_at)
+        if received_at.tzinfo is None or received_at.utcoffset() is None:
+            return received_at.replace(tzinfo=timezone.utc)
+        return received_at.astimezone(timezone.utc)
