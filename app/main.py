@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import router as api_v1_router
 from app.core.settings import Settings
-from app.db.influx import create_influx_client, ensure_database_exists
+from app.db.influx import create_influx_client
 from app.mqtt.client import MqttSubscriber
 from app.repositories.historical_influx import HistoricalInfluxRepository
 from app.repositories.influx import InfluxRepository
@@ -68,20 +68,16 @@ def create_app(
     settings: Settings | None = None,
     repository_factory: Callable | None = None,
     subscriber_factory: Callable | None = None,
-    database_initializer: Callable | None = None,
     historical_repository_factory: Callable | None = None,
 ) -> FastAPI:
     """Application factory: lets the tests build an isolated app instance."""
     app_settings = settings or Settings()
     make_repository = repository_factory or _create_repository
     make_subscriber = subscriber_factory or _create_subscriber
-    initialize_database = database_initializer or ensure_database_exists
     make_historical_repository = historical_repository_factory or _create_historical_repository
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        await asyncio.to_thread(initialize_database, app_settings)
-
         repository = make_repository(app_settings)
         historical_repository = make_historical_repository(app_settings)
         app.state.historical_readings_service = HistoricalReadingsService(historical_repository)

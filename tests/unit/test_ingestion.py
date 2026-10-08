@@ -248,16 +248,14 @@ def test_app_lifecycle_starts_and_stops_subscriber() -> None:
     app = create_app(
         repository_factory=lambda settings: FakeRepository(),
         subscriber_factory=lambda settings, service: FakeSubscriber(),
-        database_initializer=lambda settings: lifecycle.append("database.initialize"),
     )
 
     from fastapi.testclient import TestClient
 
     with TestClient(app):
-        assert lifecycle == ["database.initialize", "subscriber.start"]
+        assert lifecycle == ["subscriber.start"]
 
     assert lifecycle == [
-        "database.initialize",
         "subscriber.start",
         "subscriber.stop",
         "repository.close",

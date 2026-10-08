@@ -23,6 +23,10 @@
 
 ## Ingestion
 
+The InfluxDB database is provisioned by the **weather-station-platform**
+deployment before the backend starts. The backend connects to that database
+for ingestion and historical reads; it does not create or configure it.
+
 The backend subscribes to `weather/+/+`, matching the **firmware topics**:
 
 ```text

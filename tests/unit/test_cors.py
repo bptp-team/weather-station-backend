@@ -14,7 +14,6 @@ def create_test_app(settings: Settings):
         settings=settings,
         repository_factory=lambda settings: object(),
         subscriber_factory=lambda settings, service: TestSubscriber(),
-        database_initializer=lambda settings: None,
     )
 
 
