@@ -19,10 +19,14 @@ class MqttSubscriber:
         topic: str,
         client_id: str,
         on_event: Callable,
+        username: str = "",
+        password: str = "",
     ) -> None:
         self._topic = topic
         self._on_event = on_event
         self._client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=client_id)
+        if username:
+            self._client.username_pw_set(username, password)
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
         self._host = host
