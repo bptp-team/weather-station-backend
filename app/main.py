@@ -52,6 +52,8 @@ def _create_subscriber(settings: Settings, service: WeatherIngestionService) -> 
         topic=settings.mqtt_topic,
         client_id=settings.mqtt_client_id,
         on_event=service.accept,
+        username=settings.mqtt_username,
+        password=settings.mqtt_password.get_secret_value(),
     )
 
 
