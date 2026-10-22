@@ -145,6 +145,14 @@ the **API**. Separate multiple origins with **commas and no spaces**, for
 example `http://localhost:5173,http://192.168.1.10:5173`. The local
 **InfluxDB 3** development connection **does not use authentication**.
 
+`WEATHER_MQTT_USERNAME` and `WEATHER_MQTT_PASSWORD` are **empty by default**,
+so the backend connects **anonymously**, as the local development broker
+allows. The production broker requires both: the platform repository's
+Ansible role writes them from Key Vault, with the username
+`weather-station-backend`, and the broker's ACL lets only that user
+**subscribe** to `weather/+/+`. The password is held as a `SecretStr`, so it
+never appears in the settings' representation or in logs.
+
 Run the backend in development mode with:
 
 ```text
