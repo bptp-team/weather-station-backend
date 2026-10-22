@@ -1,4 +1,4 @@
-from pydantic import field_validator
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -10,6 +10,8 @@ class Settings(BaseSettings):
     mqtt_port: int = 1883
     mqtt_topic: str = "weather/+/+"
     mqtt_client_id: str = "weather-station-backend"
+    mqtt_username: str = ""
+    mqtt_password: SecretStr = SecretStr("")
 
     influx_url: str = "http://127.0.0.1:8181"
     influx_database: str = "weather-station-db"
