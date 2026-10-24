@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pyarrow as pa
 import pytest
 
+from app.repositories.historical_cache import SQLiteHistoricalDayCache
 from app.repositories.historical_influx import HistoricalInfluxRepository
 
 
@@ -205,6 +206,250 @@ def test_read_returns_empty_result_without_rows(
         START,
         datetime(2026, 9, 2, tzinfo=timezone.utc),
     ) == []
+
+
+def test_read_reuses_completed_day_cache_for_overlapping_partial_ranges(
+    tmp_path,
+) -> None:
+    client = FakeInfluxClient(
+        FakeQueryResult(
+            [
+                {
+                    "time": datetime(2026, 9, 8, hour, tzinfo=timezone.utc),
+                    "device_id": "station-01",
+                    "air_temperature": float(hour),
+                    "air_pressure": 101325.0,
+                    "air_humidity": 45.0,
+                    "air_quality": 4,
+                    "daylight": 2748,
+                    "water_level": 12,
+                    "latitude": -23.2,
+                    "longitude": -45.89,
+                }
+                for hour in (10, 12)
+            ]
+        )
+    )
+    cache = SQLiteHistoricalDayCache(tmp_path / "historical.sqlite3")
+    repository = HistoricalInfluxRepository(
+        client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        cache=cache,
+        now=lambda: datetime(2026, 9, 10, 12, tzinfo=timezone.utc),
+    )
+
+    first_range = repository.read(
+        "station-01",
+        datetime(2026, 9, 8, 9, tzinfo=timezone.utc),
+        datetime(2026, 9, 8, 11, tzinfo=timezone.utc),
+    )
+    second_range = repository.read(
+        "station-01",
+        datetime(2026, 9, 8, 11, tzinfo=timezone.utc),
+        datetime(2026, 9, 8, 13, tzinfo=timezone.utc),
+    )
+
+    assert [snapshot.air_temperature for snapshot in first_range] == [10.0]
+    assert [snapshot.air_temperature for snapshot in second_range] == [12.0]
+    assert len(client.calls) == 1
+
+
+def test_warm_cache_response_matches_direct_influx_response_for_partial_multi_day_range(
+    tmp_path,
+) -> None:
+    source_rows = [
+        {
+            "time": datetime(2026, 9, day, hour, tzinfo=timezone.utc),
+            "device_id": "station-01",
+            "air_temperature": float(day * 24 + hour),
+            "air_pressure": 101325.0,
+            "air_humidity": 45.0,
+            "air_quality": 4,
+            "daylight": 2748,
+            "water_level": 12,
+            "latitude": -23.2,
+            "longitude": -45.89,
+        }
+        for day, hour in ((8, 3), (8, 6), (8, 23), (9, 0), (9, 12), (10, 0), (10, 18), (10, 23))
+    ]
+    start = datetime(2026, 9, 8, 6, tzinfo=timezone.utc)
+    end = datetime(2026, 9, 10, 18, tzinfo=timezone.utc)
+    now = lambda: datetime(2026, 9, 12, 12, tzinfo=timezone.utc)
+    cache = SQLiteHistoricalDayCache(tmp_path / "historical.sqlite3")
+    cache_client = FakeInfluxClient(FakeQueryResult(source_rows))
+    cached_repository = HistoricalInfluxRepository(
+        cache_client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        cache=cache,
+        now=now,
+    )
+
+    cached_repository.read("station-01", start, end)
+    cached_client = FakeInfluxClient(FakeQueryResult(source_rows))
+    warm_cached_repository = HistoricalInfluxRepository(
+        cached_client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        cache=cache,
+        now=now,
+    )
+    uncached_client = FakeInfluxClient(FakeQueryResult(source_rows))
+    uncached_repository = HistoricalInfluxRepository(
+        uncached_client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        now=now,
+    )
+
+    warm_cached_result = warm_cached_repository.read("station-01", start, end)
+    direct_result = uncached_repository.read("station-01", start, end)
+
+    assert warm_cached_result == direct_result
+    assert [snapshot.received_at for snapshot in direct_result] == [
+        datetime(2026, 9, 8, 6, tzinfo=timezone.utc),
+        datetime(2026, 9, 8, 23, tzinfo=timezone.utc),
+        datetime(2026, 9, 9, 0, tzinfo=timezone.utc),
+        datetime(2026, 9, 9, 12, tzinfo=timezone.utc),
+        datetime(2026, 9, 10, 0, tzinfo=timezone.utc),
+    ]
+    assert cached_client.calls == []
+    assert len(uncached_client.calls) == 3
+
+
+def test_cache_entries_are_isolated_by_measurement(tmp_path) -> None:
+    cache = SQLiteHistoricalDayCache(tmp_path / "historical.sqlite3")
+    now = lambda: datetime(2026, 9, 10, 12, tzinfo=timezone.utc)
+    day_start = datetime(2026, 9, 8, tzinfo=timezone.utc)
+    day_end = day_start + timedelta(days=1)
+    row = {
+        "time": datetime(2026, 9, 8, 10, tzinfo=timezone.utc),
+        "device_id": "station-01",
+        "air_temperature": 10.0,
+        "air_pressure": 101325.0,
+        "air_humidity": 45.0,
+        "air_quality": 4,
+        "daylight": 2748,
+        "water_level": 12,
+        "latitude": -23.2,
+        "longitude": -45.89,
+    }
+    first_client = FakeInfluxClient(FakeQueryResult([row]))
+    first_repository = HistoricalInfluxRepository(
+        first_client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        cache=cache,
+        now=now,
+    )
+    first_repository.read("station-01", day_start, day_end)
+
+    other_measurement_client = FakeInfluxClient(
+        FakeQueryResult([{**row, "air_temperature": 12.0}])
+    )
+    other_measurement_repository = HistoricalInfluxRepository(
+        other_measurement_client,
+        database="weather-station-db",
+        measurement_name="other_measurement",
+        cache=cache,
+        now=now,
+    )
+
+    snapshots = other_measurement_repository.read("station-01", day_start, day_end)
+
+    assert [snapshot.air_temperature for snapshot in snapshots] == [12.0]
+    assert len(other_measurement_client.calls) == 1
+
+
+def test_read_does_not_cache_the_current_utc_day(tmp_path) -> None:
+    client = FakeInfluxClient(
+        FakeQueryResult(
+            [
+                {
+                    "time": datetime(2026, 9, 10, 10, tzinfo=timezone.utc),
+                    "device_id": "station-01",
+                    "air_temperature": 10.0,
+                    "air_pressure": 101325.0,
+                    "air_humidity": 45.0,
+                    "air_quality": 4,
+                    "daylight": 2748,
+                    "water_level": 12,
+                    "latitude": -23.2,
+                    "longitude": -45.89,
+                }
+            ]
+        )
+    )
+    cache = SQLiteHistoricalDayCache(tmp_path / "historical.sqlite3")
+    repository = HistoricalInfluxRepository(
+        client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        cache=cache,
+        now=lambda: datetime(2026, 9, 10, 12, tzinfo=timezone.utc),
+    )
+    today_start = datetime(2026, 9, 10, tzinfo=timezone.utc)
+    tomorrow = today_start + timedelta(days=1)
+
+    repository.read("station-01", today_start, tomorrow)
+    repository.read("station-01", today_start, tomorrow)
+
+    assert len(client.calls) == 2
+    assert cache.get("station-01", today_start.date()) is None
+
+
+def test_read_does_not_return_cached_rows_past_retention_cutoff(tmp_path) -> None:
+    client = FakeInfluxClient(FakeQueryResult([]))
+    cache = SQLiteHistoricalDayCache(tmp_path / "historical.sqlite3")
+    cache.put(
+        "station-01",
+        datetime(2026, 9, 8).date(),
+        [
+            {
+                "time": datetime(2026, 9, 8, 10, tzinfo=timezone.utc),
+                "device_id": "station-01",
+                "air_temperature": 10.0,
+                "air_pressure": 101325.0,
+                "air_humidity": 45.0,
+                "air_quality": 4,
+                "daylight": 2748,
+                "water_level": 12,
+                "latitude": -23.2,
+                "longitude": -45.89,
+            },
+            {
+                "time": datetime(2026, 9, 8, 13, tzinfo=timezone.utc),
+                "device_id": "station-01",
+                "air_temperature": 13.0,
+                "air_pressure": 101325.0,
+                "air_humidity": 45.0,
+                "air_quality": 4,
+                "daylight": 2748,
+                "water_level": 12,
+                "latitude": -23.2,
+                "longitude": -45.89,
+            },
+        ],
+        namespace='["weather-station-db","weather_reading"]',
+    )
+    repository = HistoricalInfluxRepository(
+        client,
+        database="weather-station-db",
+        measurement_name="weather_reading",
+        cache=cache,
+        now=lambda: datetime(2026, 9, 10, 12, tzinfo=timezone.utc),
+        retention_days=2,
+    )
+
+    snapshots = repository.read(
+        "station-01",
+        datetime(2026, 9, 8, tzinfo=timezone.utc),
+        datetime(2026, 9, 9, tzinfo=timezone.utc),
+    )
+
+    assert [snapshot.air_temperature for snapshot in snapshots] == [13.0]
+    assert client.calls == []
 
 
 def test_read_converts_arrow_nanosecond_timestamps_to_python_datetime() -> None:

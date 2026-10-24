@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     influx_url: str = "http://127.0.0.1:8181"
     influx_database: str = "weather-station-db"
     influx_measurement: str = "weather_reading"
+    historical_cache_path: str = ""
+    historical_cache_retention_days: int = 15
     snapshot_window_seconds: int = 30
 
     rain_drain_rate_ml_s: float = 1.25

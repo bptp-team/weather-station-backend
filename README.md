@@ -117,6 +117,16 @@ and cannot exceed 15 days; exactly 15 days is accepted. An empty result returns
 `200 []`.
 The backend queries InfluxDB sequentially in UTC-day windows, then combines the
 results into the single JSON list returned by the endpoint.
+When `WEATHER_HISTORICAL_CACHE_PATH` is configured, complete days before the
+current UTC day are cached in SQLite and reused for later requests. Today is
+always read from InfluxDB. Cached rows are filtered to the request interval and
+the configured retention cutoff; empty days are not cached.
+
+The cache directory and database file are restricted to the backend user
+(`0700` and `0600` on POSIX). In Docker, mount a persistent volume at the
+configured directory to retain entries across container restarts. Keep
+`WEATHER_HISTORICAL_CACHE_RETENTION_DAYS` aligned with the InfluxDB retention
+period.
 
 Each historical object has the same public weather fields as a streaming event,
 including the station coordinates. Existing readings must be backfilled with
@@ -136,6 +146,8 @@ WEATHER_MQTT_PORT=1883
 WEATHER_INFLUX_URL=http://127.0.0.1:8181
 WEATHER_INFLUX_DATABASE=weather-station-db
 WEATHER_INFLUX_MEASUREMENT=weather_reading
+WEATHER_HISTORICAL_CACHE_PATH=
+WEATHER_HISTORICAL_CACHE_RETENTION_DAYS=15
 WEATHER_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 

@@ -19,7 +19,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 FROM ${PYTHON_IMAGE} AS runtime
 
-RUN useradd --system --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin app
+RUN useradd --system --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin app \
+    && install -d --owner=10001 --group=10001 --mode=0700 /var/lib/weather-cache
 
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1

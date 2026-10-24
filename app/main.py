@@ -16,6 +16,7 @@ from app.api.v1 import router as api_v1_router
 from app.core.settings import Settings
 from app.db.influx import create_influx_client
 from app.mqtt.client import MqttSubscriber
+from app.repositories.historical_cache import SQLiteHistoricalDayCache
 from app.repositories.historical_influx import HistoricalInfluxRepository
 from app.repositories.influx import InfluxRepository
 from app.services.ingestion import WeatherIngestionService
@@ -58,10 +59,17 @@ def _create_subscriber(settings: Settings, service: WeatherIngestionService) -> 
 
 
 def _create_historical_repository(settings: Settings) -> HistoricalInfluxRepository:
+    cache = (
+        SQLiteHistoricalDayCache(settings.historical_cache_path)
+        if settings.historical_cache_path
+        else None
+    )
     return HistoricalInfluxRepository(
         create_influx_client(settings),
         database=settings.influx_database,
         measurement_name=settings.influx_measurement,
+        cache=cache,
+        retention_days=settings.historical_cache_retention_days,
     )
 
 
