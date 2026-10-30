@@ -95,8 +95,9 @@ The weather station adapts a resistive PCB water level probe mounted vertically 
 - **Funnel Area ($A_f$):** For diameter $D_f = 7.5\text{ cm}$, area $A_f = \pi \times (3.75\text{ cm})^2 \approx 44.18\text{ cm}^2$.
 - **Volume to Rain Equivalent:** $1\text{ mm of rain} \equiv 4.42\text{ mL}$ ($4.42\text{ mL/mm}$).
 - **ADC to Volume ($V$):**
-  - $V(\text{ADC}) = 0.0\text{ mL}$, for $\text{ADC} \le 400$.
-  - $V(\text{ADC}) = \frac{\text{ADC} - 400}{10.0}\text{ mL}$, for $\text{ADC} > 400$.
+  - The **water ADC threshold** defaults to **600** (`WEATHER_RAIN_ADC_THRESHOLD`).
+  - $V(\text{ADC}) = 0.0\text{ mL}$, for $\text{ADC} \le 600$.
+  - $V(\text{ADC}) = \frac{\text{ADC} - 600}{10.0}\text{ mL}$, for $\text{ADC} > 600$.
 - **Drainage Mass Balance:**
   - $V_{\text{drained}} = \min(V_{\text{prev}}, Q_{\text{drain}} \times \Delta t)$, where $Q_{\text{drain}}$ defaults to $1.25\text{ mL/s}$.
   - $V_{\text{rain}} = \max(0.0, (V_{\text{curr}} - V_{\text{prev}}) + V_{\text{drained}})$.
@@ -137,6 +138,35 @@ The raw `water_level` ADC reading is retained internally for calculating
 
 The interactive **Swagger documentation** is served at `/docs` once the backend
 is running.
+
+## Production deployment
+
+Production releases are triggered by pushing a semantic-version tag. The
+`.github/workflows/weather-station-backend.yaml` workflow runs the tests,
+publishes a versioned image to Azure Container Registry, deploys it to the
+production VM, and checks the public API.
+
+1. Commit and push the changes to `main`.
+2. From the backend repository, update `main` and run the test suite:
+
+   ```sh
+   git switch main
+   git pull --ff-only
+   make test
+   ```
+
+3. Choose a new, unused semantic version. For example, `1.3.1` is the patch
+   release after `1.3.0`. Create and push a tag for the commit on `main`:
+
+   ```sh
+   git tag -a 1.3.1 -m "Release 1.3.1"
+   git push origin 1.3.1
+   ```
+
+4. In GitHub, open **Actions** in the backend repository and follow the
+   **CI/CD** workflow for the tag. Wait for the tests, image publish, production
+   deployment, and public API check to complete successfully. Pushing the tag
+   starts the production deployment automatically; do not reuse a version tag.
 
 **Local defaults** target the **platform repository's services**:
 

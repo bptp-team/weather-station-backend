@@ -37,6 +37,11 @@ def make_snapshot(received_at: datetime, water_level: int) -> WeatherSnapshot:
     )
 
 
+def test_settings_default_uses_updated_rain_adc_threshold(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("WEATHER_RAIN_ADC_THRESHOLD", raising=False)
+    assert Settings(_env_file=None).rain_adc_threshold == 600
+
+
 def test_dry_probe_reading_yields_no_volume() -> None:
     dry_probe_adc = 283
     assert adc_to_volume_ml(dry_probe_adc, **CALIBRATION) == 0.0

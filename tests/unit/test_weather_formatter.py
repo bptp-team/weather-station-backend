@@ -64,7 +64,7 @@ def test_format_snapshots_history_processes_precipitation_chronologically() -> N
         air_humidity=50.0,
         air_quality=1,
         daylight=1000,
-        water_level=400,
+        water_level=600,
         received_at=datetime(2026, 9, 6, 12, 0, 0, tzinfo=timezone.utc),
     )
     s1 = WeatherSnapshot(
@@ -74,7 +74,7 @@ def test_format_snapshots_history_processes_precipitation_chronologically() -> N
         air_humidity=50.0,
         air_quality=1,
         daylight=1000,
-        water_level=500,
+        water_level=700,
         received_at=datetime(2026, 9, 6, 12, 0, 10, tzinfo=timezone.utc),
     )
 

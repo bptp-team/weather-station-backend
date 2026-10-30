@@ -86,17 +86,17 @@ def test_history_returns_snapshots_with_interval_precipitation() -> None:
 def test_history_sums_multiple_precipitation_intervals_for_one_day() -> None:
     baseline = replace(
         make_snapshot(),
-        water_level=400,
+        water_level=600,
         received_at=datetime(2026, 9, 6, 12, 0, 0, tzinfo=timezone.utc),
     )
     first_rainfall = replace(
         baseline,
-        water_level=500,
+        water_level=700,
         received_at=baseline.received_at + timedelta(seconds=1),
     )
     second_rainfall = replace(
         baseline,
-        water_level=575,
+        water_level=775,
         received_at=baseline.received_at + timedelta(seconds=2),
     )
     service = FakeHistoricalService([baseline, first_rainfall, second_rainfall])
