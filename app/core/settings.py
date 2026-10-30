@@ -1,6 +1,8 @@
 from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.utils.precipitation import PrecipitationTracker
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="WEATHER_", env_file=".env", extra="ignore")
@@ -23,7 +25,7 @@ class Settings(BaseSettings):
 
     rain_drain_rate_ml_s: float = 1.25
     rain_funnel_ml_per_mm: float = 4.42
-    rain_adc_threshold: int = 50
+    rain_adc_threshold: int = 400
     rain_adc_scale: float = 10.0
 
     @field_validator("allowed_origins")
@@ -36,3 +38,11 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         return self.allowed_origins.split(",") if self.allowed_origins else []
+
+    def create_precipitation_tracker(self) -> PrecipitationTracker:
+        return PrecipitationTracker(
+            drain_rate_ml_s=self.rain_drain_rate_ml_s,
+            funnel_ml_per_mm=self.rain_funnel_ml_per_mm,
+            adc_threshold=self.rain_adc_threshold,
+            adc_scale=self.rain_adc_scale,
+        )

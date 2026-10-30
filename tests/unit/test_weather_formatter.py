@@ -2,6 +2,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 
 from app.api.formatters.weather import format_snapshots_history, snapshot_to_api_payload
+from app.core.settings import Settings
 from app.models.weather import WeatherSnapshot
 
 
@@ -63,7 +64,7 @@ def test_format_snapshots_history_processes_precipitation_chronologically() -> N
         air_humidity=50.0,
         air_quality=1,
         daylight=1000,
-        water_level=50,
+        water_level=400,
         received_at=datetime(2026, 9, 6, 12, 0, 0, tzinfo=timezone.utc),
     )
     s1 = WeatherSnapshot(
@@ -73,11 +74,11 @@ def test_format_snapshots_history_processes_precipitation_chronologically() -> N
         air_humidity=50.0,
         air_quality=1,
         daylight=1000,
-        water_level=150,
+        water_level=500,
         received_at=datetime(2026, 9, 6, 12, 0, 10, tzinfo=timezone.utc),
     )
 
-    history = format_snapshots_history([s0, s1])
+    history = format_snapshots_history([s0, s1], Settings(_env_file=None).create_precipitation_tracker())
     assert len(history) == 2
     assert history[0]["precipitation_interval"] == 0.0
     assert history[1]["precipitation_interval"] == round(10.0 / 4.42, 2)

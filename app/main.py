@@ -97,6 +97,7 @@ def create_app(
             repository,
             window_seconds=app_settings.snapshot_window_seconds,
             broadcaster=broadcaster,
+            precipitation_tracker_factory=app_settings.create_precipitation_tracker,
         )
         subscriber = make_subscriber(app_settings, service)
 
@@ -118,6 +119,7 @@ def create_app(
 
     app = FastAPI(title="Weather Station Back-end", lifespan=lifespan)
     app.state.snapshot_broadcaster = SnapshotBroadcaster()
+    app.state.precipitation_tracker_factory = app_settings.create_precipitation_tracker
     app.add_middleware(
         CORSMiddleware,
         allow_origins=app_settings.cors_origins,

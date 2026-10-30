@@ -23,16 +23,13 @@ def snapshot_to_api_payload(
 
 def format_snapshots_history(
     snapshots: list[WeatherSnapshot],
-    tracker: PrecipitationTracker | None = None,
+    tracker: PrecipitationTracker,
 ) -> list[dict[str, object]]:
     """Format an ordered sequence of historical snapshots with rain tracking."""
     if not snapshots:
         return []
 
-    if tracker is None:
-        tracker = PrecipitationTracker()
-    else:
-        tracker.reset()
+    tracker.reset()
 
     formatted: list[dict[str, object]] = []
     for snapshot in snapshots:

@@ -15,7 +15,7 @@ class WeatherIngestionService:
         *,
         window_seconds: int,
         broadcaster: SnapshotBroadcaster | None = None,
-        precipitation_tracker_factory: Callable[[], PrecipitationTracker] = PrecipitationTracker,
+        precipitation_tracker_factory: Callable[[], PrecipitationTracker],
     ) -> None:
         self._repository = repository
         self._broadcaster = broadcaster

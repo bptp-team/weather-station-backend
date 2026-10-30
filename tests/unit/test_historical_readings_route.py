@@ -6,6 +6,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.v1.routes.historical_readings import router
+from app.core.settings import Settings
 from app.models.weather import WeatherSnapshot
 
 
@@ -42,6 +43,7 @@ class FakeHistoricalService:
 def make_test_client(service: FakeHistoricalService) -> TestClient:
     app = FastAPI()
     app.state.historical_readings_service = service
+    app.state.precipitation_tracker_factory = Settings(_env_file=None).create_precipitation_tracker
     app.include_router(router, prefix="/api/v1")
     return TestClient(app)
 
@@ -84,17 +86,17 @@ def test_history_returns_snapshots_with_interval_precipitation() -> None:
 def test_history_sums_multiple_precipitation_intervals_for_one_day() -> None:
     baseline = replace(
         make_snapshot(),
-        water_level=50,
+        water_level=400,
         received_at=datetime(2026, 9, 6, 12, 0, 0, tzinfo=timezone.utc),
     )
     first_rainfall = replace(
         baseline,
-        water_level=150,
+        water_level=500,
         received_at=baseline.received_at + timedelta(seconds=1),
     )
     second_rainfall = replace(
         baseline,
-        water_level=225,
+        water_level=575,
         received_at=baseline.received_at + timedelta(seconds=2),
     )
     service = FakeHistoricalService([baseline, first_rainfall, second_rainfall])

@@ -40,4 +40,4 @@ def read_historical_readings(
         snapshots = service.read(station_id, from_, to)
     except InvalidReadingRange as error:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(error)) from error
-    return format_snapshots_history(snapshots)
+    return format_snapshots_history(snapshots, request.app.state.precipitation_tracker_factory())

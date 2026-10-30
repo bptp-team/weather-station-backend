@@ -1,20 +1,14 @@
-from dataclasses import replace
 from datetime import datetime, timezone
+from dataclasses import replace
 
 from app.models.weather import WeatherSnapshot
-
-
-DEFAULT_DRAIN_RATE_ML_S = 1.25
-DEFAULT_FUNNEL_ML_PER_MM = 4.42
-DEFAULT_ADC_THRESHOLD = 50
-DEFAULT_ADC_SCALE = 10.0
 
 
 def adc_to_volume_ml(
     adc: int | float,
     *,
-    threshold: int | float = DEFAULT_ADC_THRESHOLD,
-    scale: float = DEFAULT_ADC_SCALE,
+    threshold: int | float,
+    scale: float,
 ) -> float:
     """Convert raw water level sensor ADC to volume in mL based on calibration."""
     if adc <= threshold:
@@ -25,7 +19,7 @@ def adc_to_volume_ml(
 def volume_to_precipitation_mm(
     volume_ml: float,
     *,
-    ml_per_mm: float = DEFAULT_FUNNEL_ML_PER_MM,
+    ml_per_mm: float,
 ) -> float:
     """Convert collected water volume in mL to precipitation depth in mm."""
     if volume_ml <= 0.0 or ml_per_mm <= 0.0:
@@ -39,10 +33,10 @@ class PrecipitationTracker:
     def __init__(
         self,
         *,
-        drain_rate_ml_s: float = DEFAULT_DRAIN_RATE_ML_S,
-        funnel_ml_per_mm: float = DEFAULT_FUNNEL_ML_PER_MM,
-        adc_threshold: int | float = DEFAULT_ADC_THRESHOLD,
-        adc_scale: float = DEFAULT_ADC_SCALE,
+        drain_rate_ml_s: float,
+        funnel_ml_per_mm: float,
+        adc_threshold: int | float,
+        adc_scale: float,
     ) -> None:
         self._drain_rate_ml_s = drain_rate_ml_s
         self._funnel_ml_per_mm = funnel_ml_per_mm

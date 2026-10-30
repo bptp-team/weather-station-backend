@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.mqtt.parser import parse_message
+from app.core.settings import Settings
 from app.models.weather import MeasurementEvent, WeatherSnapshot
 from app.repositories.influx import snapshot_to_point
 from app.services.ingestion import WeatherIngestionService
@@ -126,6 +127,7 @@ def test_ingestion_saves_complete_snapshot_before_publishing() -> None:
         FakeRepository(),
         window_seconds=30,
         broadcaster=FakeBroadcaster(),
+        precipitation_tracker_factory=Settings(_env_file=None).create_precipitation_tracker,
     )
     timestamp = datetime(2026, 9, 6, tzinfo=timezone.utc)
 
@@ -158,6 +160,7 @@ def test_ingestion_does_not_publish_when_saving_fails() -> None:
         FailingRepository(),
         window_seconds=30,
         broadcaster=UnexpectedPublisher(),
+        precipitation_tracker_factory=Settings(_env_file=None).create_precipitation_tracker,
     )
     timestamp = datetime(2026, 9, 6, tzinfo=timezone.utc)
 
